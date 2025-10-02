@@ -1,5 +1,5 @@
 {
-  "name": "api-apasbac",
+  "name": "apasbac-api",
   "module": "src/index.ts",
   "type": "module",
   "private": true,
