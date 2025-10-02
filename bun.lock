@@ -9,13 +9,14 @@
         "dotenv": "^17.2.3",
         "express": "^5.1.0",
         "nodemon": "^3.1.10",
-        "ts-node": "^10.9.2",
       },
       "devDependencies": {
         "@types/bun": "latest",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.9.3",
       },
       "peerDependencies": {
-        "typescript": "^5",
+        "typescript": "^5.9.3",
       },
     },
   },
