@@ -1,9 +1,12 @@
 import { Router } from "express";
+import type { RouterWithPath } from "../../types";
 
-const route = Router();
+const route = Router() as RouterWithPath;
+
+route.path = "/auth";
 
 route.get("/", (_, res) => {
-    return res.json({message: "Online 🍃"}).status(200)
-})
+  return res.status(200).json({ message: "Auth online 🍃" });
+});
 
 export default route;

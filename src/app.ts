@@ -1,15 +1,10 @@
-import express, { Router } from 'express';
-// Rotas
-import petRoutes from './routes/petRoutes.ts'
-import authRoutes from './routes/authRoutes.ts'
+import express from 'express';
+
+import { createRoutes } from './utils/createRoutes';
 
 const Application = express();
 
-const api = Router();
-
-api.use("/auth", authRoutes)
-api.use("/pets", petRoutes)
-
-Application.use("/api", api)
+const routes = await createRoutes()
+Application.use("/api", routes)
 
 export default Application;

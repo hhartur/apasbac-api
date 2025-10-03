@@ -1,13 +1,12 @@
 import { Router } from "express";
+import type { RouterWithPath } from "../../types";
 
-const route = Router();
+const route = Router() as RouterWithPath;
 
-route.get("/", async (req, res) => {
-    const query = req.query;
+route.path = "/pets";
 
-    const { pet } = query;
-    if(!pet) return res.status(400).json({message: "Tipo de animal não fornecido"})
-    return res.json({message: `Tipo do animal: ${pet}`});
-})
+route.get("/", (_, res) => {
+  return res.status(200).json({ message: "Pets Online 🍃" });
+});
 
 export default route;
