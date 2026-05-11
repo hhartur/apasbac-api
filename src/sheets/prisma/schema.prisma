@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  TUTOR
+  USER
+}
+
+enum AnimalSex {
+  MALE
+  FEMALE
+}
+
+enum AnimalSize {
+  SMALL
+  MEDIUM
+  LARGE
+  EXTRA_LARGE
+}
+
+enum MonitoringStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum PeriodUnit {
+  DAYS
+  WEEKS
+  MONTHS
+  YEARS
+}
+
+model User {
+  id        String   @id @default(uuid())
+  fullName  String
+  phone     String
+  cpf       String   @unique
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  adoptedAnimals Animal[]       @relation("AdoptedBy")
+  monitorings    Monitoring[]
+  passwordResets PasswordReset[]
+  refreshTokens  RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@map("refresh_tokens")
+}
+
+model Animal {
+  id             Int       @id @default(autoincrement())
+  uuid           String    @unique @default(uuid())
+  name           String
+  description    String
+  breed          String
+  sex            AnimalSex
+  size           AnimalSize
+  vaccines       String[]
+  temperament    String
+  escapeTendency Boolean   @default(false)
+  photos         String[]
+  isAdopted      Boolean   @default(false)
+  qrCodeUrl      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  adoptedBy   User?   @relation("AdoptedBy", fields: [adoptedById], references: [id])
+  adoptedById String?
+
+  monitorings Monitoring[]
+
+  @@map("animals")
+}
+
+model AppConfig {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  value       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("app_configs")
+}
+
+model Monitoring {
+  id          String           @id @default(uuid())
+  status      MonitoringStatus @default(PENDING)
+  videoUrl    String?
+  imageUrls   String[]
+  notes       String?
+  sheetsRowId String?
+  dueDate     DateTime
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  user     User   @relation(fields: [userId], references: [id])
+  userId   String
+
+  animal   Animal @relation(fields: [animalId], references: [id])
+  animalId Int
+
+  @@map("monitorings")
+}
+
+model PasswordReset {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@map("password_resets")
+}
