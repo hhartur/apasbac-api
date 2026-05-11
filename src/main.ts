@@ -201,18 +201,23 @@ async function bootstrap() {
   `;
 
   SwaggerModule.setup('docs', app, document, {
-    customSiteTitle: 'APASBAC — API Docs',
-    swaggerOptions: {
-      persistAuthorization: true,
-      displayRequestDuration: true,
-      filter: true,
-      tryItOutEnabled: false,
-      defaultModelsExpandDepth: 1,
-      defaultModelExpandDepth: 2,
-      docExpansion: 'list',
-      showExtensions: true,
-    },
-  });
+  customSiteTitle: 'APASBAC — API Docs',
+  customCssUrl: 'https://unpkg.com/swagger-ui-dist@5/swagger-ui.css',
+  customJs: [
+    'https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js',
+    'https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js',
+  ],
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayRequestDuration: true,
+    filter: true,
+    tryItOutEnabled: false,
+    defaultModelsExpandDepth: 1,
+    defaultModelExpandDepth: 2,
+    docExpansion: 'list',
+    showExtensions: true,
+  },
+});
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
