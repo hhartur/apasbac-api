@@ -23,7 +23,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new TransformInterceptor());
 
   app.enableCors({
-    origin: process.env.FRONTEND_URL || '*',
+    origin: '*',
     credentials: true,
   });
 
