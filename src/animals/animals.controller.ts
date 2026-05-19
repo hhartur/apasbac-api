@@ -27,10 +27,7 @@ export class AnimalsController {
   findPublic(@Param('id', ParseIntPipe) id: number) { return this.animalsService.findPublicById(id); }
 
   @Get()
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.STAFF)
-  @ApiOperation({ summary: 'Lista todos os animais (Admin/Staff)' })
+  @ApiOperation({ summary: 'Lista todos os animais' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'isAdopted', required: false, type: Boolean })
