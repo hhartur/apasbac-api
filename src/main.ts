@@ -31,7 +31,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('APASBAC API')
     .setDescription(
-      'API oficial da <strong>APASBAC</strong> — Associação Protetora de Animais de Dois Vizinhos.<br/>' +
+      'API oficial da <strong>APASBAC</strong> — Associação de Proteção aos Animais Socorro Bicho Assis Chateaubriand.<br/>' +
       'Gerencie animais, adoções, monitoramentos e muito mais.',
     )
     .setVersion('1.0')

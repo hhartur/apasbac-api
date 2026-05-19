@@ -29,7 +29,7 @@ export class MailService {
     <div class="container">
       <div class="header"><h1>🐾 APASBAC — ${title}</h1></div>
       <div class="body">${content}</div>
-      <div class="footer">© ${new Date().getFullYear()} APASBAC — Associação Protetora de Animais de Dois Vizinhos, PR</div>
+      <div class="footer">© ${new Date().getFullYear()} APASBAC — Associação de Proteção aos Animais Socorro Bicho Assis Chateaubriand, PR</div>
     </div></body></html>`;
   }
 

@@ -1,6 +1,6 @@
 # 🐾 APASBAC API
 
-API oficial da **APASBAC** — Associação Protetora de Animais de Dois Vizinhos, PR.
+API oficial da **APASBAC** — Associação de Proteção aos Animais Socorro Bicho Assis Chateaubriand, PR.
 
 ---
 
