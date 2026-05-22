@@ -6,7 +6,7 @@ import { MailService } from '../mail/mail.service';
 import { ConfigAppService } from '../config-app/config-app.service';
 import { CreateMonitoringDto } from './dto/create-monitoring.dto';
 import { ReviewMonitoringDto } from './dto/review-monitoring.dto';
-import { MonitoringStatus } from '../common/enums';
+import { MonitoringStatus, Role } from '../common/enums';
 
 @Injectable()
 export class MonitorService {
@@ -108,6 +108,7 @@ export class MonitorService {
     return updated;
   }
 
+  // Admin/Staff → retorna paginado com wrapper { data, total, page, limit, totalPages }
   async findAll(page = 1, limit = 20, status?: MonitoringStatus) {
     const skip = (page - 1) * limit;
     const where = status ? { status } : {};
@@ -121,24 +122,37 @@ export class MonitorService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
+  // Tutor → retorna lista plana, sem wrapper de paginação extra
+  // O TransformInterceptor já envolve em { success, data: [...], timestamp }
   async findMine(userId: string, page = 1, limit = 10) {
     const skip = (page - 1) * limit;
-    const [data, total] = await Promise.all([
+    const [items, total] = await Promise.all([
       this.prisma.monitoring.findMany({
         skip, take: limit, where: { userId }, orderBy: { createdAt: 'desc' },
         include: { animal: { select: { id: true, name: true, breed: true } } },
       }),
       this.prisma.monitoring.count({ where: { userId } }),
     ]);
-    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+    // Retorna lista diretamente — evita double-envelope com TransformInterceptor
+    return items;
   }
 
-  async findOne(id: string) {
+  // Tutores só podem ver seus próprios monitoramentos
+  async findOne(id: string, requesterId?: string, requesterRole?: string) {
     const m = await this.prisma.monitoring.findUnique({
       where: { id },
-      include: { user: { select: { id: true, fullName: true, email: true, phone: true } }, animal: { select: { id: true, name: true, breed: true } } },
+      include: {
+        user: { select: { id: true, fullName: true, email: true, phone: true } },
+        animal: { select: { id: true, name: true, breed: true } },
+      },
     });
     if (!m) throw new NotFoundException('Monitoramento não encontrado');
+
+    // Tutor só pode ver o próprio
+    if (requesterRole === Role.TUTOR && m.userId !== requesterId) {
+      throw new ForbiddenException('Sem permissão para ver este monitoramento');
+    }
+
     return m;
   }
 

@@ -59,14 +59,18 @@ export class MonitorController {
   @Roles(Role.TUTOR)
   @ApiOperation({ summary: 'Lista os monitoramentos do tutor autenticado' })
   @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   findMine(@CurrentUser() user: any, @Query('page') page = 1, @Query('limit') limit = 10) {
     return this.monitorService.findMine(user.id, +page, +limit);
   }
 
+  // TUTOR pode ver o próprio monitoramento; Admin/Staff veem qualquer um
   @Get(':id')
-  @Roles(Role.ADMIN, Role.STAFF)
-  @ApiOperation({ summary: 'Busca monitoramento por ID (Admin/Staff)' })
-  findOne(@Param('id') id: string) { return this.monitorService.findOne(id); }
+  @Roles(Role.ADMIN, Role.STAFF, Role.TUTOR)
+  @ApiOperation({ summary: 'Busca monitoramento por ID (Admin/Staff/Tutor)' })
+  findOne(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.monitorService.findOne(id, user.id, user.role);
+  }
 
   @Delete(':id')
   @Roles(Role.ADMIN)
