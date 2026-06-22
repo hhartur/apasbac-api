@@ -7,6 +7,7 @@ import { ConfigAppService } from '../config-app/config-app.service';
 import { CreateMonitoringDto } from './dto/create-monitoring.dto';
 import { ReviewMonitoringDto } from './dto/review-monitoring.dto';
 import { MonitoringStatus, Role } from '../common/enums';
+import { Monitoring } from '@prisma/client';
 
 @Injectable()
 export class MonitorService {
@@ -42,35 +43,35 @@ export class MonitorService {
     return new Date(now.getTime() + value * (ms[unit] || 86400000));
   }
 
-  async submit(id: string, userId: string, video: Express.Multer.File, images: Express.Multer.File[]) {
+  async submitMonitoring(
+    id: string,
+    dto: { videoUrl: string; imageUrls: string[] },
+    user: any,
+  ): Promise<Monitoring> {
     const monitoring = await this.prisma.monitoring.findUnique({
       where: { id },
-      include: { user: true, animal: true },
     });
-    if (!monitoring) throw new NotFoundException('Monitoramento não encontrado');
-    if (monitoring.userId !== userId) throw new ForbiddenException('Sem permissão');
-    if (!video) throw new BadRequestException('Vídeo obrigatório');
-    if (!images || images.length === 0) throw new BadRequestException('Pelo menos 1 imagem obrigatória');
 
-    const videoUrl = await this.storage.upload(video, 'monitoring/videos');
-    const imageUrls = await this.storage.uploadMany(images, 'monitoring/images');
+    if (!monitoring) {
+      throw new NotFoundException('Monitoramento não encontrado');
+    }
 
-    const sheetsRowId = await this.sheets.appendRow({
-      monitoringId: id,
-      submittedAt: new Date(),
-      tutorName: monitoring.user.fullName,
-      tutorEmail: monitoring.user.email,
-      animalName: monitoring.animal.name,
-      animalBreed: monitoring.animal.breed,
-      videoUrl,
-      imageUrls,
-      status: 'EM ANÁLISE',
-    }).catch(() => '');
+    if (monitoring.userId !== user.id) {
+      throw new ForbiddenException('Acesso negado');
+    }
+
+    if (monitoring.status !== 'PENDING') {
+      throw new BadRequestException('Este monitoramento já foi enviado');
+    }
 
     return this.prisma.monitoring.update({
       where: { id },
-      data: { status: MonitoringStatus.IN_REVIEW, videoUrl, imageUrls, submittedAt: new Date(), sheetsRowId },
-      include: { user: { select: { fullName: true, email: true } }, animal: { select: { name: true, breed: true } } },
+      data: {
+        videoUrl: dto.videoUrl,
+        imageUrls: dto.imageUrls,
+        status: 'IN_REVIEW',
+        submittedAt: new Date(),
+      },
     });
   }
 

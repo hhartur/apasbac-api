@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, UseInterceptors, UploadedFiles, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, UseInterceptors, UploadedFiles, Query, Request } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiQuery } from '@nestjs/swagger';
 import { MonitorService } from './monitor.service';
@@ -10,6 +10,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Role, MonitoringStatus } from '../common/enums';
 import { memoryStorage } from 'multer';
+import { SubmitMonitoringDto } from './dto/submit-monitoring.dto';
 
 @ApiTags('Monitor')
 @ApiBearerAuth('access-token')
@@ -26,16 +27,13 @@ export class MonitorController {
   }
 
   @Post(':id/submit')
-  @Roles(Role.TUTOR)
-  @UseInterceptors(FileFieldsInterceptor([{ name: 'video', maxCount: 1 }, { name: 'images', maxCount: 5 }], { storage: memoryStorage() }))
-  @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Tutor envia vídeo e imagens de acompanhamento do animal' })
-  submit(
+  @UseGuards(JwtAuthGuard)
+  async submitMonitoring(
     @Param('id') id: string,
-    @CurrentUser() user: any,
-    @UploadedFiles() files: { video?: Express.Multer.File[]; images?: Express.Multer.File[] },
+    @Body() dto: SubmitMonitoringDto,
+    @Request() req,
   ) {
-    return this.monitorService.submit(id, user.id, files?.video?.[0], files?.images || []);
+    return this.monitorService.submitMonitoring(id, dto, req.user);
   }
 
   @Patch(':id/review')
