@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { Readable } from 'stream';
+import { GenerateUploadSignatureDto } from './dto/generate-upload-signature.dto';
 
 @Injectable()
 export class StorageService {
@@ -40,24 +41,68 @@ export class StorageService {
   }
 
   async delete(url: string): Promise<void> {
-  try {
-    const { publicId, resourceType } = this.extractPublicIdAndType(url);
-    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
-  } catch (err) {
-    this.logger.error(`Erro ao deletar arquivo: ${err}`);
+    try {
+      const { publicId, resourceType } = this.extractPublicIdAndType(url);
+      await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+    } catch (err) {
+      this.logger.error(`Erro ao deletar arquivo: ${err}`);
+    }
   }
-}
+
+  generateSignedUploadPayload(dto: GenerateUploadSignatureDto) {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+    if (!cloudName || !apiKey || !apiSecret) {
+      throw new InternalServerErrorException(
+        'Cloudinary não configurado corretamente (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET).',
+      );
+    }
+
+    const timestamp = Math.floor(Date.now() / 1000);
+
+    const paramsToSign: Record<string, string | number | boolean> = {
+      timestamp,
+    };
+
+    if (dto.folder) paramsToSign.folder = dto.folder;
+    if (dto.public_id) paramsToSign.public_id = dto.public_id;
+    if (dto.tags?.length) paramsToSign.tags = dto.tags.join(',');
+    if (dto.context && Object.keys(dto.context).length) {
+      paramsToSign.context = Object.entries(dto.context)
+        .map(([key, value]) => `${key}=${value}`)
+        .join('|');
+    }
+    if (dto.eager?.length) paramsToSign.eager = dto.eager.join('|');
+    if (dto.upload_preset) paramsToSign.upload_preset = dto.upload_preset;
+    if (typeof dto.overwrite === 'boolean') paramsToSign.overwrite = dto.overwrite;
+
+    const signature = cloudinary.utils.api_sign_request(paramsToSign, apiSecret);
+    const resourceType = (dto.resource_type || 'auto').toLowerCase();
+
+    return {
+      signature,
+      timestamp,
+      api_key: apiKey,
+      cloud_name: cloudName,
+      resource_type: resourceType,
+      upload_url: `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
+      params: paramsToSign,
+      // Campos prontos para enviar no multipart/form-data do Flutter
+      form_fields: {
+        ...paramsToSign,
+        api_key: apiKey,
+        signature,
+      },
+    };
+  }
 
   /**
    * Extrai o public_id e resource_type de uma URL do Cloudinary.
    *
    * Formato:
    *   https://res.cloudinary.com/<cloud_name>/<resource_type>/upload[/v<version>]/<public_id>.<ext>
-   *
-   * Exemplos:
-   *   .../image/upload/v123/animals/abc-123.jpg  → { publicId: "animals/abc-123", resourceType: "image" }
-   *   .../video/upload/v123/videos/clip.mp4      → { publicId: "videos/clip",     resourceType: "video" }
-   *   .../raw/upload/docs/file.pdf               → { publicId: "docs/file",       resourceType: "raw"   }
    */
   private extractPublicIdAndType(url: string): { publicId: string; resourceType: string } {
     const match = url.match(/\/(image|video|raw)\/upload\/(?:v\d+\/)?(.+)$/);
