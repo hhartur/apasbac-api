@@ -22,7 +22,17 @@ export class AnimalsService {
       if (!adopter) throw new NotFoundException('Usuário adotante não encontrado');
     }
 
-    const photoUrls = photos.length > 0 ? await this.storage.uploadMany(photos, 'animals/photos') : [];
+    let photoUrls: string[] = [];
+
+    // ── Fluxo novo: URLs já enviadas direto pro Cloudinary ──
+    if (dto.photoUrls && dto.photoUrls.length > 0) {
+      if (dto.photoUrls.length > 3) throw new BadRequestException('Máximo de 3 fotos permitido');
+      photoUrls = dto.photoUrls;
+    }
+    // ── Fluxo antigo: arquivos multipart → upload no backend ──
+    else if (photos.length > 0) {
+      photoUrls = await this.storage.uploadMany(photos, 'animals/photos');
+    }
 
     const animal = await this.prisma.animal.create({
       data: {
@@ -31,7 +41,7 @@ export class AnimalsService {
         temperament: dto.temperament, escapeTendency: dto.escapeTendency,
         isAdopted: dto?.isAdopted || false,
         adoptedById: dto?.adoptedById || undefined,
-        photos: photoUrls, // <-- aqui
+        photos: photoUrls,
       },
       include: { adoptedBy: { select: { id: true, fullName: true, phone: true, email: true } } },
     });
@@ -80,7 +90,6 @@ export class AnimalsService {
     });
     if (!animal) throw new NotFoundException('Animal não encontrado');
 
-    // Load APASBAC contact info from configurable DB settings
     const [phone, email] = await Promise.all([
       this.configService.findOne('apasbac_phone').catch(() => null),
       this.configService.findOne('apasbac_email').catch(() => null),

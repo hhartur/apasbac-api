@@ -42,16 +42,20 @@ export class AnimalsController {
   @ApiOperation({ summary: 'Busca animal completo por ID numérico (Admin/Staff)' })
   findOne(@Param('id', ParseIntPipe) id: number) { return this.animalsService.findOne(id); }
 
+  // ── ATUALIZADO: aceita photoUrls (fluxo Cloudinary) OU arquivos multipart ──
   @Post()
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.STAFF)
   @UseInterceptors(FilesInterceptor('photos', 3, { storage: memoryStorage() }))
-  @ApiConsumes('multipart/form-data')
+  @ApiConsumes('multipart/form-data', 'application/json')
   @ApiOperation({ summary: 'Cadastra novo animal (Admin/Staff)' })
-  @ApiBody({ description: 'Dados do animal + fotos (máx. 3)', type: CreateAnimalDto })
-  create(@Body() dto: CreateAnimalDto, @UploadedFiles() photos: Express.Multer.File[]) {
-    return this.animalsService.create(dto, photos || []);
+  @ApiBody({ description: 'Dados do animal + fotos (máx. 3) ou photoUrls', type: CreateAnimalDto })
+  create(
+    @Body() dto: CreateAnimalDto,
+    @UploadedFiles() photos?: Express.Multer.File[],
+  ) {
+    return this.animalsService.create(dto, photos ?? []);
   }
 
   @Patch(':id')
@@ -61,7 +65,11 @@ export class AnimalsController {
   @UseInterceptors(FilesInterceptor('photos', 3, { storage: memoryStorage() }))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Edita animal (Admin/Staff)' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateAnimalDto, @UploadedFiles() photos: Express.Multer.File[]) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateAnimalDto,
+    @UploadedFiles() photos: Express.Multer.File[],
+  ) {
     return this.animalsService.update(id, dto, photos);
   }
 
@@ -85,7 +93,10 @@ export class AnimalsController {
   @Roles(Role.ADMIN, Role.STAFF)
   @ApiOperation({ summary: 'Vincula tutor ao animal após adoção (Admin/Staff)' })
   @ApiBody({ schema: { type: 'object', properties: { userId: { type: 'string', format: 'uuid' } } } })
-  linkAdopter(@Param('id', ParseIntPipe) id: number, @Body('userId') userId: string) {
+  linkAdopter(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('userId') userId: string,
+  ) {
     return this.animalsService.linkAdopter(id, userId);
   }
 }
