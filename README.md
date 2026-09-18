@@ -2,6 +2,8 @@
 
 API oficial da **APASBAC** — Associação de Proteção aos Animais Socorro Bicho Assis Chateaubriand, PR.
 
+Política de versões Android, HTTP 426 e telemetria de atualização: [documentação](docs/APP_VERSION.md).
+
 ---
 
 ## 🚀 Tecnologias

@@ -11,6 +11,7 @@ import { MonitorModule } from './monitor/monitor.module';
 import { StorageModule } from './storage/storage.module';
 import { MailModule } from './mail/mail.module';
 import { SheetsModule } from './sheets/sheets.module';
+import { AppVersionModule } from './app-version/app-version.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { SheetsModule } from './sheets/sheets.module';
     StorageModule,
     MailModule,
     SheetsModule,
+    AppVersionModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
