@@ -26,8 +26,7 @@ export function configureApp(app: INestApplication) {
   // Real client IP behind the hosting proxy (rate limiting and audit).
   (app.getHttpAdapter().getInstance() as any).set('trust proxy', 1);
   app.use(requestId);
-  // JSON API: CSP is irrelevant for JSON and would break the Swagger UI assets loaded from unpkg.
-  app.use(helmet({ contentSecurityPolicy: false }));
+  app.use(helmet());
 
   // Auth is Bearer-only (no cookies), so credentials are not needed. CORS_ORIGINS restricts browsers to an allowlist.
   const origins = process.env.CORS_ORIGINS?.split(',').map((o) => o.trim()).filter(Boolean);

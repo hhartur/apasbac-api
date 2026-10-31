@@ -4,7 +4,7 @@ API oficial da **APASBAC** — Associação de Proteção aos Animais Socorro Bi
 
 - **Developer Platform** (documentação, referência, playground, arquivos para IA): pasta [`documentation/`](documentation/README.md)
 - **OpenAPI**: `GET /openapi.json` na API e `documentation/openapi/openapi.json`
-- **Swagger UI**: `/docs`
+- **`/docs`**: redireciona para a Developer Platform (variável `DOCS_URL`); o Swagger UI foi removido
 - Política de versões Android, HTTP 426 e telemetria de atualização: [documentação](docs/APP_VERSION.md)
 
 ---
@@ -19,7 +19,6 @@ API oficial da **APASBAC** — Associação de Proteção aos Animais Socorro Bi
 - **Nodemailer** (e-mails transacionais)
 - **QRCode** (geração por animal)
 - **helmet**, **@nestjs/throttler** (headers de segurança e rate limiting)
-- **Swagger** com CSS personalizado (vermelho APASBAC)
 - **Docker Compose** (ambiente local completo)
 
 ---
@@ -39,7 +38,6 @@ docker compose exec api npm run prisma:seed
 
 # 4. Acesse
 #    API:     http://localhost:3000/api/v1
-#    Swagger: http://localhost:3000/docs
 #    OpenAPI: http://localhost:3000/openapi.json
 #    Adminer: http://localhost:8080  (GUI do banco)
 ```
@@ -71,6 +69,7 @@ Todas estão documentadas em [`.env.example`](.env.example). Novas na v1.1.0:
 
 | Variável | Uso |
 |---|---|
+| `DOCS_URL` | URL da documentação; `GET /docs` redireciona para ela |
 | `CORS_ORIGINS` | Origens de navegador permitidas (vírgula). Vazio = qualquer origem (a API usa Bearer token, não cookies) |
 | `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | Admin inicial criado pelo seed. Em produção, sem `SEED_ADMIN_PASSWORD`, nenhum admin é criado |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Armazenamento de mídias (já usadas antes, agora documentadas) |
@@ -154,7 +153,7 @@ Operações importantes (login, falhas de login, alterações de usuários, anim
 
 Os dados de contato **não ficam no `.env`** — eles são gerenciados via banco de dados pelo Admin, evitando exposição acidental.
 
-Após o primeiro deploy, configure pelo Swagger ou via curl:
+Após o primeiro deploy, configure pelo playground da documentação ou via curl:
 
 ```bash
 # Telefone
