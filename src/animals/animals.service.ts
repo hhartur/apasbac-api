@@ -5,7 +5,7 @@ import { ConfigAppService } from '../config-app/config-app.service';
 import { CreateAnimalDto } from './dto/create-animal.dto';
 import { UpdateAnimalDto } from './dto/update-animal.dto';
 import * as QRCode from 'qrcode';
-import { assertImages } from '../common/uploads';
+import { assertImages, imageSource } from '../common/uploads';
 
 @Injectable()
 export class AnimalsService {
@@ -16,6 +16,7 @@ export class AnimalsService {
   ) {}
 
   async create(dto: CreateAnimalDto, photos: Express.Multer.File[]) {
+    const source = imageSource(dto.photoUrls, photos, 'photoUrls', 'photos');
     if (photos.length > 3) throw new BadRequestException('Máximo de 3 fotos permitido');
     assertImages(photos);
 
@@ -26,15 +27,9 @@ export class AnimalsService {
 
     let photoUrls: string[] = [];
 
-    // ── Fluxo novo: URLs já enviadas direto pro Cloudinary ──
-    if (dto.photoUrls && dto.photoUrls.length > 0) {
-      if (dto.photoUrls.length > 3) throw new BadRequestException('Máximo de 3 fotos permitido');
-      photoUrls = dto.photoUrls;
-    }
-    // ── Fluxo antigo: arquivos multipart → upload no backend ──
-    else if (photos.length > 0) {
-      photoUrls = await this.storage.uploadMany(photos, 'animals/photos', true);
-    }
+    // URLs informadas (upload direto ou links) OU arquivos enviados para a API subir no storage
+    if (source === 'url') photoUrls = dto.photoUrls;
+    else if (source === 'file') photoUrls = await this.storage.uploadMany(photos, 'animals/photos', true);
 
     const animal = await this.prisma.animal.create({
       data: {
@@ -143,18 +138,23 @@ export class AnimalsService {
       const adopter = await this.prisma.user.findUnique({ where: { id: dto.adoptedById } });
       if (!adopter) throw new NotFoundException('Usuário adotante não encontrado');
     }
+    const { photoUrls, ...data } = dto;
+    const source = imageSource(photoUrls, newPhotos ?? [], 'photoUrls', 'photos');
     let photos = animal.photos;
-    if (newPhotos && newPhotos.length > 0) {
+    if (source === 'url') photos = photoUrls;
+    if (source === 'file') {
       if (newPhotos.length > 3) throw new BadRequestException('Máximo de 3 fotos');
       assertImages(newPhotos);
       // Upload first: if it fails, the current photos are kept.
       photos = await this.storage.uploadMany(newPhotos, 'animals/photos', true);
-      await this.storage.deleteMany(animal.photos);
     }
-    return this.prisma.animal.update({
-      where: { id }, data: { ...dto, photos },
+    const updated = await this.prisma.animal.update({
+      where: { id }, data: { ...data, photos },
       include: { adoptedBy: { select: { id: true, fullName: true, phone: true, email: true } } },
     });
+    // Replaced photos are removed from storage only after the animal points to the new ones.
+    await this.storage.deleteMany(animal.photos.filter((u) => !photos.includes(u)));
+    return updated;
   }
 
   async remove(id: number) {

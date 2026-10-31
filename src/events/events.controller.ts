@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -9,7 +9,7 @@ import { Role } from '../common/enums';
 import { imageUploadOptions } from '../common/uploads';
 import { Audited } from '../audit/audit.interceptor';
 import { ApiEnvelope } from '../common/swagger';
-import { EventsService } from './events.service';
+import { EventFiles, EventsService } from './events.service';
 import { EventCategoryResponse, EventResponse } from './dto/event-response.dto';
 import {
   AdminEventQueryDto, CreateEventCategoryDto, CreateEventDto, MAX_GALLERY, PublicEventQueryDto,
@@ -17,6 +17,9 @@ import {
 } from './dto/event.dto';
 
 const STAFF = [Role.ADMIN, Role.STAFF];
+const EVENT_FILES = FileFieldsInterceptor([{ name: 'cover', maxCount: 1 }, { name: 'gallery', maxCount: MAX_GALLERY }], imageUploadOptions(MAX_GALLERY + 1));
+const IMAGES_RULE = 'Imagens por URL OU por arquivo, nunca os dois para o mesmo campo (400): capa = coverImageUrl ou arquivo cover; ' +
+  'galeria = galleryUrls ou arquivos gallery (multipart/form-data; JPEG/PNG/WebP até 8 MB, conteúdo verificado), que a API envia ao storage.';
 
 @ApiTags('Events')
 @Controller('events')
@@ -65,17 +68,21 @@ export class EventsController {
 
   @Post()
   @ApiBearerAuth('access-token') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(...STAFF)
+  @UseInterceptors(EVENT_FILES)
   @Audited({ action: 'EVENT_CREATE', resource: 'event' })
-  @ApiOperation({ summary: 'Cria evento (Admin/Staff)', description: 'Status padrão DRAFT.' })
+  @ApiConsumes('application/json', 'multipart/form-data')
+  @ApiOperation({ summary: 'Cria evento (Admin/Staff)', description: `Status padrão DRAFT. ${IMAGES_RULE}` })
   @ApiEnvelope(EventResponse, { status: 201 })
-  create(@Body() dto: CreateEventDto, @CurrentUser() user: any) { return this.events.create(dto, user.id); }
+  create(@Body() dto: CreateEventDto, @CurrentUser() user: any, @UploadedFiles() files?: EventFiles) { return this.events.create(dto, user.id, files); }
 
   @Patch(':id')
   @ApiBearerAuth('access-token') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(...STAFF)
+  @UseInterceptors(EVENT_FILES)
   @Audited({ action: 'EVENT_UPDATE', resource: 'event' })
-  @ApiOperation({ summary: 'Atualiza evento (Admin/Staff)' })
+  @ApiConsumes('application/json', 'multipart/form-data')
+  @ApiOperation({ summary: 'Atualiza evento (Admin/Staff)', description: `${IMAGES_RULE} Imagens substituídas são apagadas do storage.` })
   @ApiEnvelope(EventResponse)
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateEventDto) { return this.events.update(id, dto); }
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateEventDto, @UploadedFiles() files?: EventFiles) { return this.events.update(id, dto, files); }
 
   @Delete(':id')
   @ApiBearerAuth('access-token') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.ADMIN)

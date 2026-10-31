@@ -35,3 +35,22 @@ export function assertImages(files: Express.Multer.File[] = []) {
     }
   }
 }
+
+/**
+ * Staff image fields accept either URLs or uploaded files, never both. Returns which source was used.
+ * `urlField`/`fileField` name the request fields in the error message.
+ */
+export function imageSource(urls: string | string[] | undefined | null, files: Express.Multer.File[] = [], urlField: string, fileField: string) {
+  const hasUrls = Array.isArray(urls) ? urls.length > 0 : !!urls;
+  if (hasUrls && files.length) {
+    throw new BadRequestException(`Envie ${urlField} (URL) ou arquivo(s) no campo ${fileField}, não os dois`);
+  }
+  return hasUrls ? 'url' : files.length ? 'file' : 'none';
+}
+
+/** Multipart sends one URL as a plain string and several as repeated fields or a JSON array; normalize to string[]. */
+export const toStringArray = ({ value }: { value: unknown }) => {
+  if (typeof value !== 'string') return value;
+  if (value.trim().startsWith('[')) { try { return JSON.parse(value); } catch { return value; } }
+  return [value];
+};

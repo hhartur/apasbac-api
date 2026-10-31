@@ -6,7 +6,7 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import { sanitizeMetadata } from '../src/audit/audit.service';
-import { assertImages, detectImageType } from '../src/common/uploads';
+import { assertImages, detectImageType, imageSource, toStringArray } from '../src/common/uploads';
 import { StorageService } from '../src/storage/storage.service';
 import { slugify } from '../src/events/events.service';
 import { AuthService, REUSE_GRACE_MS, sha256 } from '../src/auth/auth.service';
@@ -204,4 +204,16 @@ test('Prisma errors map to 404/409 with the request id', () => {
   new HttpExceptionFilter().catch(err('P2003'), host); assert.equal(status, 409);
   new HttpExceptionFilter().catch(new Error('db password=secret'), host); assert.equal(status, 500);
   assert.equal(body.message, 'Erro interno do servidor', 'internal errors never leak details');
+});
+
+test('staff image fields accept URL or files, never both', () => {
+  const f = [file(JPEG, 'a.jpg', 'image/jpeg')];
+  assert.equal(imageSource(undefined, [], 'photoUrls', 'photos'), 'none');
+  assert.equal(imageSource(['https://x/a.jpg'], [], 'photoUrls', 'photos'), 'url');
+  assert.equal(imageSource([], f, 'photoUrls', 'photos'), 'file');
+  assert.throws(() => imageSource(['https://x/a.jpg'], f, 'photoUrls', 'photos'), /não os dois/);
+  assert.throws(() => imageSource('https://x/c.jpg', f, 'coverImageUrl', 'cover'), /cover/);
+  assert.deepEqual(toStringArray({ value: 'https://x/a.jpg' }), ['https://x/a.jpg']);
+  assert.deepEqual(toStringArray({ value: '["https://x/a.jpg","https://x/b.jpg"]' }), ['https://x/a.jpg', 'https://x/b.jpg']);
+  assert.deepEqual(toStringArray({ value: ['a'] }), ['a']);
 });

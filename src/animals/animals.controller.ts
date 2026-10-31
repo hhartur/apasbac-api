@@ -66,8 +66,8 @@ export class AnimalsController {
   @Audited({ action: 'ANIMAL_CREATE', resource: 'animal' })
   @ApiConsumes('application/json', 'multipart/form-data')
   @ApiOperation({ summary: 'Cadastra novo animal (Admin/Staff)',
-    description: 'JSON com photoUrls (URLs já enviadas ao Cloudinary via /storage/signed-upload, máx. 3) ou multipart com até 3 arquivos ' +
-      'em photos (JPEG/PNG/WebP, 8 MB cada, conteúdo verificado). Gera e armazena o QR Code automaticamente.' })
+    description: 'Fotos por URL OU por arquivo, nunca os dois (400): photoUrls (até 3 URLs, JSON ou multipart) ou até 3 arquivos ' +
+      'no campo photos (multipart; JPEG/PNG/WebP, 8 MB cada, conteúdo verificado), que a API envia ao storage. Gera o QR Code automaticamente.' })
   @ApiBody({ description: 'Dados do animal + fotos (máx. 3) ou photoUrls', type: CreateAnimalDto })
   @ApiEnvelope(AnimalResponse, { status: 201 })
   create(
@@ -84,7 +84,8 @@ export class AnimalsController {
   @UseInterceptors(FilesInterceptor('photos', 3, imageUploadOptions(3)))
   @Audited({ action: 'ANIMAL_UPDATE', resource: 'animal' })
   @ApiConsumes('application/json', 'multipart/form-data')
-  @ApiOperation({ summary: 'Edita animal (Admin/Staff)', description: 'Se arquivos forem enviados em photos, substituem todas as fotos atuais (as antigas são apagadas do storage).' })
+  @ApiOperation({ summary: 'Edita animal (Admin/Staff)', description: 'Para trocar as fotos, envie photoUrls OU arquivos em photos (nunca os dois): ' +
+    'substituem todas as fotos atuais, e as que saírem são apagadas do storage. Sem nenhum dos dois, as fotos são mantidas.' })
   @ApiEnvelope(AnimalResponse)
   update(
     @Param('id', ParseIntPipe) id: number,

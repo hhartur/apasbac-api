@@ -5,9 +5,13 @@ description: Upload direto assinado, upload pela API e todas as validações apl
 
 Há dois caminhos, ambos para o Cloudinary (o binário nunca vai para o banco).
 
+<Callout type="info" title="URL ou arquivo — nunca os dois">
+Nos cadastros da equipe, cada campo de imagem aceita **URLs** ou **arquivos**, não ambos na mesma requisição (`400`): fotos do animal = `photoUrls` ou arquivos `photos`; capa do evento = `coverImageUrl` ou arquivo `cover`; galeria = `galleryUrls` ou arquivos `gallery`. URLs informadas pela equipe podem ser de qualquer endereço `https`.
+</Callout>
+
 ## 1. Upload pela API (multipart)
 
-Usado em `POST /animals`, `PATCH /animals/:id`, `POST /events/:id/image` e `POST /events/:id/gallery`.
+Usado em `POST /animals`, `PATCH /animals/:id`, `POST /events`, `PATCH /events/:id`, `POST /events/:id/image` e `POST /events/:id/gallery`.
 
 | Verificação | Regra |
 | --- | --- |
@@ -32,7 +36,7 @@ Usado em `POST /animals`, `PATCH /animals/:id`, `POST /events/:id/image` e `POST
 
 - A assinatura inclui `allowed_formats`: o Cloudinary recusa arquivos cujo formato real não esteja na lista.
 - Apenas ADMIN/STAFF podem usar `public_id`, `overwrite`, `upload_preset` e `eager` — usuários comuns não conseguem sobrescrever arquivos existentes.
-- URLs enviadas depois (monitoramentos e eventos) precisam pertencer à conta Cloudinary da API.
+- URLs de monitoramento (enviadas por tutores) precisam pertencer à conta Cloudinary da API.
 
 ```javascript
 // 1. assinatura

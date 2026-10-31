@@ -185,7 +185,7 @@ describe('events', () => {
     assert.equal((await call('POST', '/api/v1/events', { token: tokens.user, body: { ...base, categoryId } })).status, 403);
     assert.equal((await call('POST', '/api/v1/events', { token: tokens.staff, body: { ...base, categoryId, endsAt: '2099-11-20T00:00:00Z' } })).status, 400);
     assert.equal((await call('POST', '/api/v1/events', { token: tokens.staff, body: { ...base, categoryId, latitude: 200 } })).status, 400);
-    assert.equal((await call('POST', '/api/v1/events', { token: tokens.staff, body: { ...base, categoryId, coverImageUrl: 'https://evil.example/x.jpg' } })).status, 400);
+    assert.equal((await call('POST', '/api/v1/events', { token: tokens.staff, body: { ...base, categoryId, coverImageUrl: 'http://insecure.example/x.jpg' } })).status, 400, 'https only');
     assert.equal((await call('POST', '/api/v1/events', { token: tokens.staff, body: { ...base, categoryId: 999 } })).status, 404);
     const r = await call('POST', '/api/v1/events', { token: tokens.staff, body: { ...base, categoryId } });
     assert.equal(r.status, 201);
@@ -218,6 +218,59 @@ describe('events', () => {
     assert.notEqual(second.body.data.coverImageUrl, first.body.data.coverImageUrl);
     assert.ok(deleted.includes(first.body.data.coverImageUrl), 'replaced file is deleted: ' + JSON.stringify({ deleted, first: first.body.data.coverImageUrl }));
     assert.equal((await call('POST', `/api/v1/events/${eventId}/image`, { token: tokens.user, form: form() })).status, 403);
+  });
+
+  test('event images: URL or files, never both', async () => {
+    const jpeg = () => new Blob([JPEG], { type: 'image/jpeg' });
+    const fields = (f: FormData) => { for (const [k, v] of Object.entries({ ...base, categoryId })) f.append(k, String(v)); return f; };
+
+    const both = fields(new FormData()); both.append('cover', jpeg(), 'c.jpg'); both.append('coverImageUrl', 'https://img.example/c.jpg');
+    const r1 = await call('POST', '/api/v1/events', { token: tokens.staff, form: both });
+    assert.equal(r1.status, 400); assert.match(String(r1.body.message), /não os dois/);
+
+    const both2 = fields(new FormData()); both2.append('gallery', jpeg(), 'g.jpg'); both2.append('galleryUrls', 'https://img.example/g.jpg');
+    assert.equal((await call('POST', '/api/v1/events', { token: tokens.staff, form: both2 })).status, 400);
+
+    const files = fields(new FormData()); files.append('cover', jpeg(), 'c.jpg'); files.append('gallery', jpeg(), 'g1.jpg'); files.append('gallery', jpeg(), 'g2.jpg');
+    const r2 = await call('POST', '/api/v1/events', { token: tokens.staff, form: files });
+    assert.equal(r2.status, 201, JSON.stringify(r2.body));
+    assert.match(r2.body.data.coverImageUrl, /res\.cloudinary\.com\/apasbac-e2e\/.*events\/covers/);
+    assert.equal(r2.body.data.galleryUrls.length, 2);
+
+    const fake = fields(new FormData()); fake.append('cover', new Blob(['<svg/>']), 'c.jpg');
+    assert.equal((await call('POST', '/api/v1/events', { token: tokens.staff, form: fake })).status, 400, 'content is verified');
+
+    const r3 = await call('PATCH', `/api/v1/events/${r2.body.data.id}`, { token: tokens.staff, body: { coverImageUrl: 'https://img.example/nova.jpg' } });
+    assert.equal(r3.status, 200);
+    assert.equal(r3.body.data.coverImageUrl, 'https://img.example/nova.jpg');
+    assert.ok(deleted.includes(r2.body.data.coverImageUrl), 'replaced cover deleted');
+  });
+
+  test('animal photos: URL or files, never both', async () => {
+    const jpeg = () => new Blob([JPEG], { type: 'image/jpeg' });
+    const animal = { name: 'Mel', description: 'd', breed: 'SRD', sex: 'FEMALE', size: 'SMALL', vaccines: 'V10', temperament: 't', escapeTendency: 'false' };
+    const fields = () => { const f = new FormData(); for (const [k, v] of Object.entries(animal)) f.append(k, v); return f; };
+
+    const both = fields(); both.append('photos', jpeg(), 'a.jpg'); both.append('photoUrls', 'https://img.example/a.jpg');
+    assert.equal((await call('POST', '/api/v1/animals', { token: tokens.staff, form: both })).status, 400);
+
+    const files = fields(); files.append('photos', jpeg(), 'a.jpg');
+    const r = await call('POST', '/api/v1/animals', { token: tokens.staff, form: files });
+    assert.equal(r.status, 201, JSON.stringify(r.body));
+    assert.match(r.body.data.photos[0], /animals\/photos/);
+
+    const urls = await call('POST', '/api/v1/animals', { token: tokens.staff,
+      body: { ...animal, vaccines: ['V10'], escapeTendency: false, photoUrls: ['https://img.example/b.jpg'] } });
+    assert.equal(urls.status, 201);
+    assert.deepEqual(urls.body.data.photos, ['https://img.example/b.jpg']);
+
+    const upd = await call('PATCH', `/api/v1/animals/${r.body.data.id}`, { token: tokens.staff, body: { photoUrls: ['https://img.example/c.jpg'] } });
+    assert.equal(upd.status, 200, JSON.stringify(upd.body));
+    assert.deepEqual(upd.body.data.photos, ['https://img.example/c.jpg']);
+    assert.ok(deleted.includes(r.body.data.photos[0]), 'replaced photo deleted');
+
+    const bothUpd = new FormData(); bothUpd.append('photos', jpeg(), 'a.jpg'); bothUpd.append('photoUrls', 'https://img.example/d.jpg');
+    assert.equal((await call('PATCH', `/api/v1/animals/${r.body.data.id}`, { token: tokens.staff, form: bothUpd })).status, 400);
   });
 
   test('cancelled events stay public with a reason; category in use cannot be deleted', async () => {

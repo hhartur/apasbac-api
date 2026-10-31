@@ -10,6 +10,22 @@ description: Capa e galeria de eventos — upload, substituição e exibição.
 
 ## Enviar (ADMIN/STAFF)
 
+Ao criar ou editar o evento (`POST /events`, `PATCH /events/:id`), cada campo aceita **URL ou arquivo, nunca os dois** (`400`):
+
+| Campo | Por URL (JSON ou multipart) | Por arquivo (multipart) |
+| --- | --- | --- |
+| Capa | `coverImageUrl` | `cover` (1 arquivo) |
+| Galeria (substitui a atual) | `galleryUrls` | `gallery` (até 12 arquivos) |
+
+```bash
+curl -X POST "https://apasbac-api.vercel.app/api/v1/events" \
+  -H "Authorization: Bearer $APASBAC_ACCESS_TOKEN" \
+  -F "title=Feira de Adoção" -F "description=Venha adotar" -F "categoryId=1" \
+  -F "startsAt=2026-11-21T13:00:00Z" -F "cover=@./capa.jpg" -F "gallery=@./foto1.jpg" -F "gallery=@./foto2.jpg"
+```
+
+Para trocar só a capa de um evento existente também existe o endpoint dedicado:
+
 ```bash
 curl -X POST "https://apasbac-api.vercel.app/api/v1/events/3/image" \
   -H "Authorization: Bearer $APASBAC_ACCESS_TOKEN" \
@@ -19,7 +35,7 @@ curl -X POST "https://apasbac-api.vercel.app/api/v1/events/3/image" \
 - JPEG, PNG ou WebP até 8 MB; o conteúdo é verificado.
 - A capa anterior é apagada do storage depois que a nova é salva.
 - Galeria: `POST /events/:id/gallery` com um ou mais arquivos no campo `images`; remoção com `DELETE /events/:id/gallery` e `{ "url": "…" }`.
-- Alternativa: upload direto assinado (pastas `events/covers` e `events/gallery`) e envio das URLs em `coverImageUrl`/`galleryUrls`.
+- Por URL: qualquer endereço `https` (inclusive o upload direto assinado nas pastas `events/covers` e `events/gallery`).
 
 ## Exibir
 

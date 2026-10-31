@@ -8,6 +8,7 @@ description: Histórico de versões da APASBAC API, do mais recente ao mais anti
 ### FEATURE
 - **Eventos**: `GET /events`, `GET /events/{id}`, `GET /events/slug/{slug}`, `GET /events/categories`, criação, edição, exclusão, capa, galeria e categorias administráveis; `GET /admin/events` e `GET /admin/events/{id}`.
 - **Auditoria**: tabela imutável e `GET /admin/audit-logs`, `GET /admin/audit-logs/{id}` (ADMIN).
+- Imagens da equipe por **URL ou arquivo, nunca os dois** (400): `POST/PATCH /animals` (`photoUrls` ou `photos`), `POST/PATCH /events` (`coverImageUrl` ou `cover`; `galleryUrls` ou `gallery`). `PATCH /animals/{id}` passou a aceitar `photoUrls`; URLs de eventos podem ser qualquer endereço `https`.
 - `POST /auth/logout` sem `refreshToken` encerra todas as sessões.
 - `GET /openapi.json` público na API; header `X-Request-Id` em todas as respostas.
 - Erros incluem `requestId`; `P2025`/`P2002`/`P2003` do banco viram `404`/`409` em vez de `500`.

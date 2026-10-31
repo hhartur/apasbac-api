@@ -1626,7 +1626,7 @@
           "STAFF"
         ],
         "summary": "Cadastra novo animal (Admin/Staff)",
-        "description": "JSON com photoUrls (URLs já enviadas ao Cloudinary via /storage/signed-upload, máx. 3) ou multipart com até 3 arquivos em photos (JPEG/PNG/WebP, 8 MB cada, conteúdo verificado). Gera e armazena o QR Code automaticamente.",
+        "description": "Fotos por URL OU por arquivo, nunca os dois (400): photoUrls (até 3 URLs, JSON ou multipart) ou até 3 arquivos no campo photos (multipart; JPEG/PNG/WebP, 8 MB cada, conteúdo verificado), que a API envia ao storage. Gera o QR Code automaticamente.",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1890,7 +1890,7 @@
           "STAFF"
         ],
         "summary": "Edita animal (Admin/Staff)",
-        "description": "Se arquivos forem enviados em photos, substituem todas as fotos atuais (as antigas são apagadas do storage).",
+        "description": "Para trocar as fotos, envie photoUrls OU arquivos em photos (nunca os dois): substituem todas as fotos atuais, e as que saírem são apagadas do storage. Sem nenhum dos dois, as fotos são mantidas.",
         "parameters": [
           {
             "name": "id",
@@ -4734,12 +4734,17 @@
           "STAFF"
         ],
         "summary": "Cria evento (Admin/Staff)",
-        "description": "Status padrão DRAFT.",
+        "description": "Status padrão DRAFT. Imagens por URL OU por arquivo, nunca os dois para o mesmo campo (400): capa = coverImageUrl ou arquivo cover; galeria = galleryUrls ou arquivos gallery (multipart/form-data; JPEG/PNG/WebP até 8 MB, conteúdo verificado), que a API envia ao storage.",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEventDto"
+              }
+            },
+            "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/CreateEventDto"
               }
@@ -4797,6 +4802,16 @@
           },
           "403": {
             "description": "Autenticado, mas sem permissão (role ou dono do recurso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Arquivo ou corpo grande demais",
             "content": {
               "application/json": {
                 "schema": {
@@ -5214,6 +5229,7 @@
           "STAFF"
         ],
         "summary": "Atualiza evento (Admin/Staff)",
+        "description": "Imagens por URL OU por arquivo, nunca os dois para o mesmo campo (400): capa = coverImageUrl ou arquivo cover; galeria = galleryUrls ou arquivos gallery (multipart/form-data; JPEG/PNG/WebP até 8 MB, conteúdo verificado), que a API envia ao storage. Imagens substituídas são apagadas do storage.",
         "parameters": [
           {
             "name": "id",
@@ -5228,6 +5244,11 @@
           "required": true,
           "content": {
             "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEventDto"
+              }
+            },
+            "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateEventDto"
               }
@@ -5295,6 +5316,16 @@
           },
           "404": {
             "description": "Recurso não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Arquivo ou corpo grande demais",
             "content": {
               "application/json": {
                 "schema": {
@@ -7288,7 +7319,7 @@
           },
           "photoUrls": {
             "maxItems": 3,
-            "description": "URLs obtidas pelo upload direto (POST /storage/signed-upload)",
+            "description": "URLs das fotos (upload direto ou links). Use photoUrls OU arquivos em photos, não os dois.",
             "type": "array",
             "items": {
               "type": "string",
@@ -7352,6 +7383,15 @@
           },
           "adoptedById": {
             "type": "string"
+          },
+          "photoUrls": {
+            "maxItems": 3,
+            "description": "Substitui todas as fotos por estas URLs. Use photoUrls OU arquivos em photos, não os dois.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
           }
         }
       },
@@ -7747,11 +7787,11 @@
           "coverImageUrl": {
             "type": "string",
             "format": "uri",
-            "description": "URL de upload direto (pasta events/covers). Alternativa a POST /events/:id/image."
+            "description": "URL da capa. Use coverImageUrl OU o arquivo cover (multipart), não os dois."
           },
           "galleryUrls": {
             "maxItems": 12,
-            "description": "URLs de upload direto (pasta events/gallery)",
+            "description": "URLs da galeria (substitui a galeria). Use galleryUrls OU arquivos gallery (multipart), não os dois.",
             "type": "array",
             "items": {
               "type": "string",
@@ -8036,11 +8076,11 @@
           "coverImageUrl": {
             "type": "string",
             "format": "uri",
-            "description": "URL de upload direto (pasta events/covers). Alternativa a POST /events/:id/image."
+            "description": "URL da capa. Use coverImageUrl OU o arquivo cover (multipart), não os dois."
           },
           "galleryUrls": {
             "maxItems": 12,
-            "description": "URLs de upload direto (pasta events/gallery)",
+            "description": "URLs da galeria (substitui a galeria). Use galleryUrls OU arquivos gallery (multipart), não os dois.",
             "type": "array",
             "items": {
               "type": "string",

@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
+import { toStringArray } from '../../common/uploads';
 import {
   ArrayMaxSize, IsArray, IsDate, IsEnum, IsIn, IsInt, IsLatitude, IsLongitude, IsNotEmpty, IsOptional,
   IsString, IsUrl, Matches, Max, MaxLength, Min, MinLength, Validate, ValidatorConstraint, ValidatorConstraintInterface,
@@ -72,11 +73,11 @@ export class CreateEventDto {
   @ApiPropertyOptional({ description: 'Motivo exibido publicamente quando status = CANCELLED', maxLength: 500 })
   @IsOptional() @Transform(trim) @IsString() @MaxLength(500) cancellationReason?: string;
 
-  @ApiPropertyOptional({ format: 'uri', description: 'URL de upload direto (pasta events/covers). Alternativa a POST /events/:id/image.' })
+  @ApiPropertyOptional({ format: 'uri', description: 'URL da capa. Use coverImageUrl OU o arquivo cover (multipart), não os dois.' })
   @IsOptional() @IsUrl({ protocols: ['https'], require_protocol: true }) coverImageUrl?: string;
 
-  @ApiPropertyOptional({ type: [String], format: 'uri', maxItems: MAX_GALLERY, description: 'URLs de upload direto (pasta events/gallery)' })
-  @IsOptional() @IsArray() @ArrayMaxSize(MAX_GALLERY) @IsUrl({ protocols: ['https'], require_protocol: true }, { each: true }) galleryUrls?: string[];
+  @ApiPropertyOptional({ type: [String], format: 'uri', maxItems: MAX_GALLERY, description: 'URLs da galeria (substitui a galeria). Use galleryUrls OU arquivos gallery (multipart), não os dois.' })
+  @IsOptional() @Transform(toStringArray) @IsArray() @ArrayMaxSize(MAX_GALLERY) @IsUrl({ protocols: ['https'], require_protocol: true }, { each: true }) galleryUrls?: string[];
 }
 
 export class UpdateEventDto extends PartialType(CreateEventDto) {}

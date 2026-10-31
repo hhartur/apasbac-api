@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
-import { assertImages } from '../common/uploads';
+import { assertImages, imageSource } from '../common/uploads';
 import {
   AdminEventQueryDto, CreateEventCategoryDto, CreateEventDto, EventQueryDto, EventStatus, MAX_GALLERY,
   PUBLIC_EVENT_STATUSES, PublicEventQueryDto, UpdateEventCategoryDto, UpdateEventDto,
@@ -14,6 +14,8 @@ export function slugify(text: string): string {
 }
 
 const CATEGORY = { select: { id: true, name: true, slug: true } };
+
+export interface EventFiles { cover?: Express.Multer.File[]; gallery?: Express.Multer.File[] }
 
 @Injectable()
 export class EventsService {
@@ -73,9 +75,26 @@ export class EventsService {
 
   // ── Mutations ──────────────────────────────────────────────────────────────
 
-  private assertOwnedUrls(urls: (string | undefined)[]) {
-    if (!urls.filter(Boolean).every((u) => this.storage.isOwnedUrl(u))) {
-      throw new BadRequestException('Imagens devem ser enviadas pelo upload da APASBAC (POST /storage/signed-upload ou endpoints de imagem do evento)');
+  /** Cover and gallery come as URLs or as uploaded files, never both; files are validated and uploaded here. */
+  private async resolveImages(dto: UpdateEventDto, files: EventFiles = {}) {
+    const cover = files.cover ?? [];
+    const gallery = files.gallery ?? [];
+    const coverSource = imageSource(dto.coverImageUrl, cover, 'coverImageUrl', 'cover');
+    const gallerySource = imageSource(dto.galleryUrls, gallery, 'galleryUrls', 'gallery');
+    assertImages([...cover, ...gallery]);
+    const images: { coverImageUrl?: string; galleryUrls?: string[] } = {};
+    if (coverSource === 'file') images.coverImageUrl = await this.storage.upload(cover[0], 'events/covers', true);
+    if (gallerySource === 'file') images.galleryUrls = await this.storage.uploadMany(gallery, 'events/gallery', true);
+    return images;
+  }
+
+  /** Runs a database write; files uploaded for it are deleted again if the write fails. */
+  private async withUploads<T>(images: { coverImageUrl?: string; galleryUrls?: string[] }, write: () => Promise<T>) {
+    try {
+      return await write();
+    } catch (err) {
+      await this.storage.deleteMany([images.coverImageUrl, ...(images.galleryUrls ?? [])].filter(Boolean));
+      throw err;
     }
   }
 
@@ -92,38 +111,38 @@ export class EventsService {
     if (endsAt && endsAt < startsAt) throw new BadRequestException('endsAt deve ser igual ou posterior a startsAt');
   }
 
-  async create(dto: CreateEventDto, userId: string) {
+  async create(dto: CreateEventDto, userId: string, files?: EventFiles) {
     this.assertDates(dto.startsAt, dto.endsAt);
-    this.assertOwnedUrls([dto.coverImageUrl, ...(dto.galleryUrls ?? [])]);
+    const images = await this.resolveImages(dto, files);
     const { slug, categoryId, ...data } = dto;
     const status = dto.status ?? EventStatus.DRAFT;
-    return this.prisma.event.create({
+    return this.withUploads(images, async () => this.prisma.event.create({
       data: {
-        ...data, status, slug: await this.uniqueSlug(slug ?? slugify(dto.title)),
+        ...data, ...images, status, slug: await this.uniqueSlug(slug ?? slugify(dto.title)),
         category: { connect: { id: categoryId } },
         publishedAt: status === EventStatus.PUBLISHED ? new Date() : null,
         createdById: userId,
       },
       include: { category: CATEGORY },
-    });
+    }));
   }
 
-  async update(id: number, dto: UpdateEventDto) {
+  async update(id: number, dto: UpdateEventDto, files?: EventFiles) {
     const current = await this.findAdminOne(id);
     this.assertDates(dto.startsAt ?? current.startsAt, dto.endsAt === undefined ? current.endsAt : dto.endsAt);
-    this.assertOwnedUrls([dto.coverImageUrl, ...(dto.galleryUrls ?? [])]);
+    const images = await this.resolveImages(dto, files);
     const { slug, categoryId, ...data } = dto;
-    const updated = await this.prisma.event.update({
+    const updated = await this.withUploads(images, async () => this.prisma.event.update({
       where: { id },
       data: {
-        ...data,
+        ...data, ...images,
         slug: slug && slug !== current.slug ? await this.uniqueSlug(slug, id) : undefined,
         category: categoryId ? { connect: { id: categoryId } } : undefined,
         // publishedAt records the first publication only.
         publishedAt: dto.status === EventStatus.PUBLISHED && !current.publishedAt ? new Date() : undefined,
       },
       include: { category: CATEGORY },
-    });
+    }));
     // Replaced or removed images are deleted from storage after the database points to the new ones.
     const kept = new Set([updated.coverImageUrl, ...updated.galleryUrls]);
     await this.storage.deleteMany([current.coverImageUrl, ...current.galleryUrls].filter((u) => u && !kept.has(u)));

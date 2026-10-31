@@ -10,6 +10,7 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { toStringArray } from '../../common/uploads';
 
 export enum AnimalSex {
   MALE = 'MALE',
@@ -87,8 +88,9 @@ export class CreateAnimalDto {
   adoptedById?: string;
 
   // ── Fluxo de upload direto (Cloudinary) ──
-  @ApiPropertyOptional({ type: [String], format: 'uri', maxItems: 3, description: 'URLs obtidas pelo upload direto (POST /storage/signed-upload)' })
+  @ApiPropertyOptional({ type: [String], format: 'uri', maxItems: 3, description: 'URLs das fotos (upload direto ou links). Use photoUrls OU arquivos em photos, não os dois.' })
   @IsOptional()
+  @Transform(toStringArray)
   @IsArray()
   @ArrayMaxSize(3)
   @IsUrl({}, { each: true })
