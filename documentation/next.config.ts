@@ -18,13 +18,21 @@ const csp = [
   "object-src 'none'",
 ].join('; ');
 
+// DOCS_EXPORT=1: static export served by the API itself (root scripts/build-docs.mjs). Headers then come from
+// the API (helmet) and vercel.json, because a static export cannot set response headers.
+const exportMode = process.env.DOCS_EXPORT === '1';
+
 const config: NextConfig = {
+  ...(exportMode ? { output: 'export' as const, trailingSlash: true, images: { unoptimized: true } } : {}),
   poweredByHeader: false,
   // The API's package-lock.json sits one level up; the docs app is its own project root.
   outputFileTracingRoot: process.cwd(),
   turbopack: { root: process.cwd() },
   reactStrictMode: true,
-  async headers() {
+  ...(exportMode ? {} : { headers }),
+};
+
+async function headers() {
     return [
       {
         source: '/:path*',
@@ -43,7 +51,6 @@ const config: NextConfig = {
         headers: [{ key: 'Access-Control-Allow-Origin', value: '*' }],
       },
     ];
-  },
-};
+}
 
 export default config;

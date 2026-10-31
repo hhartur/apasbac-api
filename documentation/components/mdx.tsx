@@ -39,6 +39,8 @@ async function CodeGroup({ titles, title, children }: { titles: string; title?: 
 }
 
 function A({ href = '', children }: { href?: string; children?: ReactNode }) {
+  // Files such as /openapi.json are not pages: a plain link avoids router prefetch requests.
+  if (href.startsWith('/') && /\.\w+$/.test(href.split('#')[0])) return <a href={href}>{children}</a>;
   if (href.startsWith('/') || href.startsWith('#')) return <Link href={href}>{children}</Link>;
   return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
 }

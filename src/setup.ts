@@ -26,7 +26,12 @@ export function configureApp(app: INestApplication) {
   // Real client IP behind the hosting proxy (rate limiting and audit).
   (app.getHttpAdapter().getInstance() as any).set('trust proxy', 1);
   app.use(requestId);
-  app.use(helmet());
+  // CSP matches the static Developer Platform served from public/ (Next export needs inline scripts/styles).
+  app.use(helmet({ contentSecurityPolicy: { directives: {
+    defaultSrc: ["'self'"], scriptSrc: ["'self'", "'unsafe-inline'"], styleSrc: ["'self'", "'unsafe-inline'"],
+    imgSrc: ["'self'", 'data:', 'https:'], fontSrc: ["'self'"], objectSrc: ["'none'"], frameAncestors: ["'none'"],
+    connectSrc: ["'self'", 'http://localhost:3000', 'https://apasbac-api.vercel.app'], baseUri: ["'self'"], formAction: ["'self'"],
+  } } }));
 
   // Auth is Bearer-only (no cookies), so credentials are not needed. CORS_ORIGINS restricts browsers to an allowlist.
   const origins = process.env.CORS_ORIGINS?.split(',').map((o) => o.trim()).filter(Boolean);

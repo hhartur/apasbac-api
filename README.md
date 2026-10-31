@@ -4,7 +4,7 @@ API oficial da **APASBAC** — Associação de Proteção aos Animais Socorro Bi
 
 - **Developer Platform** (documentação, referência, playground, arquivos para IA): pasta [`documentation/`](documentation/README.md)
 - **OpenAPI**: `GET /openapi.json` na API e `documentation/openapi/openapi.json`
-- **`/docs`**: redireciona para a Developer Platform (variável `DOCS_URL`); o Swagger UI foi removido
+- **Documentação na própria API**: `npm run build` exporta `documentation/` como site estático em `public/`, servido na raiz (`/`, `/docs/...`, `/api-reference/...`, `/playground`, `/llms.txt`). `/docs` redireciona para a home da documentação. O Swagger UI foi removido
 - Política de versões Android, HTTP 426 e telemetria de atualização: [documentação](docs/APP_VERSION.md)
 
 ---
@@ -69,7 +69,7 @@ Todas estão documentadas em [`.env.example`](.env.example). Novas na v1.1.0:
 
 | Variável | Uso |
 |---|---|
-| `DOCS_URL` | URL da documentação; `GET /docs` redireciona para ela |
+| `DOCS_URL` | Opcional: se a documentação for hospedada em outro domínio, `GET /docs` redireciona para ela (padrão: `/`) |
 | `CORS_ORIGINS` | Origens de navegador permitidas (vírgula). Vazio = qualquer origem (a API usa Bearer token, não cookies) |
 | `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | Admin inicial criado pelo seed. Em produção, sem `SEED_ADMIN_PASSWORD`, nenhum admin é criado |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Armazenamento de mídias (já usadas antes, agora documentadas) |

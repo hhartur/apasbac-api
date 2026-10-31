@@ -7,7 +7,9 @@ export const site = {
   title: 'APASBAC Developer Platform',
   description:
     'Documentação oficial da APASBAC API. Descubra recursos, consulte dados, integre funcionalidades e desenvolva experiências conectadas à associação.',
-  url: (process.env.NEXT_PUBLIC_DOCS_URL || 'http://localhost:3001').replace(/\/$/, ''),
+  url: (process.env.NEXT_PUBLIC_DOCS_URL
+    || (process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`)
+    || 'http://localhost:3001').replace(/\/$/, ''),
   github: 'https://github.com/hhartur/apasbac-api',
   apiVersion: spec.info.version,
   apiBase: 'https://apasbac-api.vercel.app/api/v1',

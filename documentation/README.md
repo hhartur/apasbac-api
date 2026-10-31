@@ -61,9 +61,11 @@ npx playwright install chromium
 npm run test:e2e       # navegação, busca, tema, mobile, playground, headers, acessibilidade (desktop + mobile)
 ```
 
-## Publicação (independente da API)
+## Publicação
 
-A documentação é um projeto separado: publicar a documentação não reinicia nem altera a API.
+**Padrão: no mesmo projeto da API.** O `npm run build` da raiz executa `scripts/build-docs.mjs`, que gera o export estático (`DOCS_EXPORT=1`, `output: 'export'`) e copia para `public/`. Na Vercel, `public/**` é servido pelo CDN na raiz do domínio da API; localmente e em Docker, o Nest serve a mesma pasta. Headers de segurança vêm do helmet (API) e do `vercel.json` (CDN). `npm run docs:build` refaz só a documentação.
+
+**Alternativa: projeto separado** (não reinicia a API ao publicar a documentação):
 
 **Vercel (recomendado)**
 
