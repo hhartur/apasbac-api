@@ -6,7 +6,11 @@ export const THEME_SCRIPT = `try{var t=localStorage.getItem('theme');var d=t?t==
 
 export function ThemeToggle() {
   const [dark, setDark] = useState<boolean | null>(null);
-  useEffect(() => setDark(document.documentElement.classList.contains('dark')), []);
+  useEffect(() => {
+    setDark(document.documentElement.classList.contains('dark'));
+    // Marks the page as interactive (the header is on every page); E2E tests wait for it before clicking.
+    document.documentElement.dataset.hydrated = '1';
+  }, []);
   const toggle = () => {
     const next = !document.documentElement.classList.contains('dark');
     document.documentElement.classList.toggle('dark', next);

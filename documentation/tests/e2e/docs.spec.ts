@@ -1,9 +1,16 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+// Waits for hydration: clicking server-rendered HTML before React attaches handlers loses the click on slow CI runners.
+async function open(page: Page, path: string) {
+  const res = await page.goto(path);
+  await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+  return res;
+}
 
 const isMobile = (name: string) => name === 'mobile';
 
 test('home: hero, official logo, CTAs and version', async ({ page }) => {
-  await page.goto('/');
+  await open(page, '/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Construa integrações com a APASBAC.');
   await expect(page.getByAltText('APASBAC — Socorro Bicho')).toBeVisible();
   await expect(page.getByRole('link', { name: /Começar/ })).toHaveAttribute('href', '/docs/inicio/primeiros-passos');
@@ -14,7 +21,7 @@ test('home: hero, official logo, CTAs and version', async ({ page }) => {
 
 test('navigation: sidebar marks the current page and breadcrumbs follow', async ({ page }, info) => {
   test.skip(isMobile(info.project.name), 'sidebar is a drawer on mobile');
-  await page.goto('/docs/inicio/introducao');
+  await open(page, '/docs/inicio/introducao');
   await page.getByRole('navigation', { name: 'Documentação' }).getByRole('link', { name: 'Paginação' }).click();
   await expect(page).toHaveURL(/\/docs\/fundamentos\/paginacao$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Paginação');
@@ -24,7 +31,7 @@ test('navigation: sidebar marks the current page and breadcrumbs follow', async 
 
 test('mobile menu opens the full navigation and closes on navigation', async ({ page }, info) => {
   test.skip(!isMobile(info.project.name));
-  await page.goto('/');
+  await open(page, '/');
   await page.getByTestId('mobile-menu').click();
   const dialog = page.getByRole('dialog', { name: 'Menu de navegação' });
   await expect(dialog).toBeVisible();
@@ -34,7 +41,7 @@ test('mobile menu opens the full navigation and closes on navigation', async ({ 
 });
 
 test('search: keyboard shortcut, results for endpoints, Enter navigates', async ({ page }) => {
-  await page.goto('/docs/inicio/introducao');
+  await open(page, '/docs/inicio/introducao');
   await page.keyboard.press('Control+k');
   const input = page.getByRole('combobox');
   await expect(input).toBeFocused();
@@ -46,7 +53,7 @@ test('search: keyboard shortcut, results for endpoints, Enter navigates', async 
 
 test('theme: toggle switches to dark and survives reload', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
-  await page.goto('/docs/inicio/introducao');
+  await open(page, '/docs/inicio/introducao');
   await expect(page.locator('html')).not.toHaveClass(/dark/);
   await page.getByTestId('theme-toggle').click();
   await expect(page.locator('html')).toHaveClass(/dark/);
@@ -56,7 +63,7 @@ test('theme: toggle switches to dark and survives reload', async ({ page }) => {
 
 test('endpoint page: language tabs, copy button, sections', async ({ page, context }, info) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-  await page.goto('/api-reference/autenticacao/login');
+  await open(page, '/api-reference/autenticacao/login');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Login de usuário');
   for (const id of ['autenticacao', 'corpo', 'exemplos', 'resposta', 'erros', 'playground']) await expect(page.locator(`#${id}`)).toBeAttached();
   const tabs = page.getByRole('tablist', { name: 'Linguagem' }).first();
@@ -70,7 +77,7 @@ test('endpoint page: language tabs, copy button, sections', async ({ page, conte
 });
 
 test('playground: validates locally, requires confirmation and keeps tokens out of storage', async ({ page }) => {
-  await page.goto('/playground');
+  await open(page, '/playground');
   const pg = page.getByTestId('playground');
   await expect(pg.locator('code').first()).toContainText('http://localhost:3000/api/v1/animals');
   await page.getByLabel('Endpoint').selectOption({ label: 'POST /auth/logout — Encerrar sessão do usuário' });
@@ -103,19 +110,19 @@ test('machine-readable files and security headers', async ({ request }) => {
 
 test('accessibility basics and no horizontal overflow', async ({ page }) => {
   for (const path of ['/', '/docs/seguranca/autorizacao', '/api-reference/eventos/find-all', '/docs/eventos/exemplos', '/playground']) {
-    await page.goto(path);
+    await open(page, path);
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
     expect(await page.locator('img:not([alt])').count(), path).toBe(0);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, `${path} overflows horizontally`).toBeLessThanOrEqual(1);
   }
-  await page.goto('/docs/inicio/introducao');
+  await open(page, '/docs/inicio/introducao');
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Pular para o conteúdo' })).toBeFocused();
 });
 
 test('unknown pages return 404 with guidance', async ({ page }) => {
-  const res = await page.goto('/docs/nao-existe');
+  const res = await open(page, '/docs/nao-existe');
   expect(res?.status()).toBe(404);
   await expect(page.getByRole('heading', { name: 'Página não encontrada' })).toBeVisible();
 });
