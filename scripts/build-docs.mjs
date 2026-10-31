@@ -13,7 +13,8 @@ if (!existsSync(join(docs, 'package.json'))) {
   process.exit(0);
 }
 const run = (cmd) => execSync(cmd, { cwd: docs, stdio: 'inherit', env: { ...process.env, DOCS_EXPORT: '1', NEXT_TELEMETRY_DISABLED: '1' } });
-if (!existsSync(join(docs, 'node_modules'))) run('npm ci --no-audit --no-fund');
+// --include=dev: hosting builds often run with NODE_ENV=production, which would skip Tailwind/TypeScript.
+if (!existsSync(join(docs, 'node_modules'))) run('npm ci --include=dev --no-audit --no-fund');
 run('npx next build');
 rmSync(join(root, 'public'), { recursive: true, force: true });
 cpSync(join(docs, 'out'), join(root, 'public'), { recursive: true });
