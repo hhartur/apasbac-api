@@ -1,0 +1,26 @@
+---
+title: Imagens
+description: Capa e galeria de eventos — upload, substituição e exibição.
+---
+
+| Campo | Conteúdo |
+| --- | --- |
+| `coverImageUrl` | Imagem de capa (ou `null`) |
+| `galleryUrls` | Até 12 imagens adicionais |
+
+## Enviar (ADMIN/STAFF)
+
+```bash
+curl -X POST "https://apasbac-api.vercel.app/api/v1/events/3/image" \
+  -H "Authorization: Bearer $APASBAC_ACCESS_TOKEN" \
+  -F "image=@./capa.jpg"
+```
+
+- JPEG, PNG ou WebP até 8 MB; o conteúdo é verificado.
+- A capa anterior é apagada do storage depois que a nova é salva.
+- Galeria: `POST /events/:id/gallery` com um ou mais arquivos no campo `images`; remoção com `DELETE /events/:id/gallery` e `{ "url": "…" }`.
+- Alternativa: upload direto assinado (pastas `events/covers` e `events/gallery`) e envio das URLs em `coverImageUrl`/`galleryUrls`.
+
+## Exibir
+
+As imagens são servidas pelo Cloudinary e já limitadas a 2000 px. Use `loading="lazy"`, `alt` descritivo e um placeholder quando `coverImageUrl` for `null`.

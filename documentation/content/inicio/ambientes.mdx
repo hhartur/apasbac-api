@@ -1,0 +1,43 @@
+---
+title: Ambientes e URLs
+description: URLs de produção e local, Swagger, OpenAPI e arquivos para IA.
+---
+
+| Ambiente | URL base | Observações |
+| --- | --- | --- |
+| Produção | `https://apasbac-api.vercel.app/api/v1` | Dados reais. Use somente com autorização. |
+| Local | `http://localhost:3000/api/v1` | `docker compose up -d` no repositório da API. Banco descartável. |
+| Staging | — | <Status value="not-implemented" /> Não existe um ambiente de staging público. |
+
+## Recursos de cada ambiente da API
+
+| Caminho | Conteúdo |
+| --- | --- |
+| `/api/v1/...` | Endpoints |
+| `/docs` | Swagger UI |
+| `/openapi.json` | Especificação OpenAPI 3.0 (a partir da v1.1.0) |
+
+## Recursos desta documentação
+
+| Caminho | Conteúdo |
+| --- | --- |
+| [`/openapi.json`](/openapi.json) | Mesma especificação, versionada com a documentação |
+| [`/llms.txt`](/llms.txt) | Resumo estruturado para modelos de linguagem |
+| [`/llms-full.txt`](/llms-full.txt) | Documentação completa em texto |
+| [`/AGENTS.md`](/AGENTS.md) | Instruções para agentes de código |
+
+## Rodando a API localmente
+
+```bash
+git clone https://github.com/hhartur/apasbac-api.git
+cd apasbac-api
+cp .env.example .env          # ajuste DATABASE_URL e os segredos JWT
+npm install
+npx prisma migrate deploy
+npm run prisma:seed           # cria admin local, configs e categorias de eventos
+npm run start:dev
+```
+
+<Callout type="warning" title="Credenciais do ambiente local">
+Fora de produção o seed cria `admin@apasbac.org.br` com uma senha padrão de desenvolvimento. Em produção não existe senha padrão: o primeiro admin só é criado se `SEED_ADMIN_PASSWORD` for definido.
+</Callout>

@@ -1,0 +1,31 @@
+---
+title: LGPD
+description: Dados tratados pela API, finalidades, acesso, retenção e exclusão.
+---
+
+<Callout type="warning" title="Aviso">
+Este conteúdo é técnico e informativo. Não constitui política de privacidade nem parecer jurídico.
+</Callout>
+
+## Dados tratados
+
+| Categoria | Dados | Finalidade | Público? |
+| --- | --- | --- | --- |
+| Autenticação | E-mail, hash de senha, refresh tokens (hash) | Acesso à conta | Não |
+| Cadastro de usuário | Nome, telefone, CPF, e-mail | Identificação de adotantes e equipe | Não |
+| Tutor | Nome, telefone, e-mail | Contato em caso de animal perdido | Somente via QR Code de animal adotado |
+| Monitoramento | Fotos, vídeo, observações, datas | Acompanhamento pós-adoção | Não; mídias apagadas após revisão |
+| Animais | Nome, fotos, raça, temperamento, vacinas | Divulgação para adoção | Sim |
+| Eventos | Título, descrição, local, datas, imagens | Divulgação institucional | Sim (exceto rascunhos) |
+| Auditoria | ID e role do autor, ação, IP, user agent | Segurança e rastreabilidade | Não (ADMIN) |
+
+## Retenção e exclusão
+
+| Dado | Retenção |
+| --- | --- |
+| Conta de usuário | Até a exclusão por um ADMIN (`DELETE /users/:id`); sessões e tokens de redefinição são removidos junto |
+| Mídias de monitoramento | Até a revisão |
+| Registros de monitoramento | Até exclusão por ADMIN |
+| Auditoria | Indeterminada (sem expurgo automático); definir política |
+
+<Status value="not-implemented" /> Não há endpoint de autoatendimento para o titular exportar ou excluir os próprios dados; esses pedidos são atendidos pela administração.

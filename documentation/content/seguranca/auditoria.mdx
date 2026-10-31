@@ -1,0 +1,38 @@
+---
+title: Auditoria
+description: O que é registrado, como consultar e as garantias de integridade.
+---
+
+## Eventos auditados
+
+| Grupo | Ações |
+| --- | --- |
+| Autenticação | `AUTH_LOGIN`, `AUTH_LOGIN_FAILED`, `AUTH_LOGOUT`, `AUTH_REFRESH`, `AUTH_REFRESH_REUSE_DETECTED`, `AUTH_REGISTER`, `AUTH_PASSWORD_RESET_REQUESTED`, `AUTH_PASSWORD_RESET` |
+| Usuários | `USER_UPDATE`, `USER_ROLE_UPDATE`, `USER_DELETE` |
+| Animais e adoção | `ANIMAL_CREATE`, `ANIMAL_UPDATE`, `ANIMAL_DELETE`, `ANIMAL_QRCODE_REGENERATE`, `ADOPTION_LINK` |
+| Monitoramentos | `MONITORING_CREATE`, `MONITORING_SUBMIT`, `MONITORING_APPROVE`, `MONITORING_REJECT`, `MONITORING_DELETE` |
+| Configurações | `CONFIG_CREATE`, `CONFIG_UPDATE`, `CONFIG_DELETE` |
+| Eventos | `EVENT_CREATE`, `EVENT_UPDATE`, `EVENT_DELETE`, `EVENT_IMAGE_UPLOAD`, `EVENT_IMAGE_DELETE`, `EVENT_GALLERY_ADD`, `EVENT_GALLERY_REMOVE`, `EVENT_CATEGORY_CREATE`, `EVENT_CATEGORY_UPDATE`, `EVENT_CATEGORY_DELETE` |
+| Mídias | `UPLOAD_SIGNATURE_ISSUED` |
+
+## Conteúdo de um registro
+
+`actorId`, `actorRole`, `action`, `resource`, `resourceId`, `outcome` (`SUCCESS`/`FAILURE`), `metadata`, `ipAddress`, `userAgent`, `requestId`, `createdAt`.
+
+`metadata` guarda apenas o método, a rota, os **nomes** dos campos enviados e tipo/tamanho de arquivos. Valores de campos nunca são gravados; chaves sensíveis (senha, token, CPF, e-mail, telefone, assinatura) são substituídas por `[redacted]`.
+
+## Garantias
+
+- **Imutável**: um trigger no PostgreSQL bloqueia `UPDATE` e `DELETE` na tabela `audit_logs`. Não há endpoints de edição ou exclusão.
+- **Consistente**: mutações são registradas somente após o sucesso; falhas de login são registradas como `FAILURE`.
+- **Política de falha**: se a gravação da auditoria falhar, a operação (já concluída) não é desfeita; o registro completo vai para o log da aplicação com o marcador `AUDIT_WRITE_FAILED`.
+- **Acesso**: somente ADMIN, em <Endpoint method="GET" path="/admin/audit-logs" />.
+
+```bash
+curl "https://apasbac-api.vercel.app/api/v1/admin/audit-logs?action=AUTH_LOGIN_FAILED&from=2026-10-01T00:00:00Z" \
+  -H "Authorization: Bearer $APASBAC_ADMIN_TOKEN"
+```
+
+<Callout type="info" title="Retenção">
+Não há expurgo automático. Uma política de retenção deve ser executada por um DBA, desativando temporariamente o trigger, conforme decisão da associação.
+</Callout>

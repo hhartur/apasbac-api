@@ -1,0 +1,27 @@
+---
+title: Autenticação segura
+description: Como tokens são emitidos, guardados, renovados e revogados no servidor.
+---
+
+| Aspecto | Implementação |
+| --- | --- |
+| Emissão | JWT HS256 com segredos distintos para access e refresh token |
+| Validade | Access 15 min; refresh 7 dias (configuráveis) |
+| Armazenamento | Refresh tokens persistidos só como hash SHA-256; tokens antigos da v1.0 aceitos até expirar |
+| Unicidade | Cada refresh token tem `jti` aleatório |
+| Rotação | Cada renovação revoga o token usado e emite um novo par da mesma família |
+| Reuso | Token rotacionado reapresentado após 10 s revoga a família inteira e gera auditoria |
+| Logout | Remove a sessão (ou todas) do banco |
+| Senhas | bcrypt (custo 12); política mínima no cadastro e na redefinição |
+| Enumeração | Login com mesma mensagem e tempo equivalente; recuperação de senha sempre responde 200 |
+| Redefinição | Token aleatório guardado como hash, válido 2 h, uso único; encerra todas as sessões |
+| Revalidação | Usuário recarregado do banco a cada requisição (role atual, conta existente) |
+
+<Callout type="warning" title="Limitação conhecida">
+Access tokens não são revogados individualmente: após logout ou mudança de senha, o access token já emitido segue válido até expirar (no máximo 15 minutos por padrão).
+</Callout>
+
+## Configuração obrigatória em produção
+
+- `JWT_ACCESS_SECRET` e `JWT_REFRESH_SECRET` longos, aleatórios e diferentes (`openssl rand -base64 48`).
+- Nunca reutilize os valores de exemplo do `.env.example`.

@@ -6,8 +6,10 @@ import {
   IsArray,
   IsOptional,
   IsUrl,
+  ArrayMaxSize,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum AnimalSex {
   MALE = 'MALE',
@@ -22,24 +24,30 @@ export enum AnimalSize {
 }
 
 export class CreateAnimalDto {
+  @ApiProperty({ example: 'Leão' })
   @IsString()
   @IsNotEmpty()
   name: string;
 
+  @ApiProperty({ example: 'Resgatado na rua, dócil e saudável.' })
   @IsString()
   @IsNotEmpty()
   description: string;
 
+  @ApiProperty({ example: 'Vira-Lata' })
   @IsString()
   @IsNotEmpty()
   breed: string;
 
+  @ApiProperty({ enum: AnimalSex })
   @IsEnum(AnimalSex)
   sex: AnimalSex;
 
+  @ApiProperty({ enum: AnimalSize })
   @IsEnum(AnimalSize)
   size: AnimalSize;
 
+  @ApiProperty({ type: [String], example: ['V10', 'Antirrábica'], description: 'Array JSON ou, em multipart, texto separado por vírgulas' })
   @IsArray()
   @IsString({ each: true })
   // Aceita "vac1,vac2" (multipart) ou array (json)
@@ -53,16 +61,19 @@ export class CreateAnimalDto {
   )
   vaccines: string[];
 
+  @ApiProperty({ example: 'Brincalhão' })
   @IsString()
   @IsNotEmpty()
   temperament: string;
 
+  @ApiProperty({ example: false })
   @IsBoolean()
   @Transform(({ value }) =>
     value === true || value === 'true' || value === 1 || value === '1',
   )
   escapeTendency: boolean;
 
+  @ApiPropertyOptional({ example: false })
   @IsOptional()
   @IsBoolean()
   @Transform(({ value }) =>
@@ -70,13 +81,16 @@ export class CreateAnimalDto {
   )
   isAdopted?: boolean;
 
+  @ApiPropertyOptional({ format: 'uuid', description: 'ID do usuário adotante (opcional)' })
   @IsOptional()
   @IsString()
   adoptedById?: string;
 
   // ── Fluxo de upload direto (Cloudinary) ──
+  @ApiPropertyOptional({ type: [String], format: 'uri', maxItems: 3, description: 'URLs obtidas pelo upload direto (POST /storage/signed-upload)' })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(3)
   @IsUrl({}, { each: true })
   photoUrls?: string[];
 }

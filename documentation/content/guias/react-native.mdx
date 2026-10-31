@@ -1,0 +1,40 @@
+---
+title: Integração com React Native
+description: expo-secure-store para tokens e o mesmo cliente do guia de JavaScript.
+---
+
+```bash
+npx expo install expo-secure-store
+```
+
+```typescript
+import * as SecureStore from 'expo-secure-store';
+import { createClient } from './apasbac-client'; // cliente do guia de JavaScript
+
+let cache: { accessToken?: string; refreshToken?: string } = {};
+
+export async function loadTokens() {
+  cache = {
+    accessToken: (await SecureStore.getItemAsync('apasbac_at')) ?? undefined,
+    refreshToken: (await SecureStore.getItemAsync('apasbac_rt')) ?? undefined,
+  };
+}
+
+export const api = createClient({
+  getTokens: () => cache,
+  setTokens: (t) => {
+    cache = t;
+    SecureStore.setItemAsync('apasbac_at', t.accessToken);
+    SecureStore.setItemAsync('apasbac_rt', t.refreshToken);
+  },
+  onLogout: () => {
+    cache = {};
+    SecureStore.deleteItemAsync('apasbac_at');
+    SecureStore.deleteItemAsync('apasbac_rt');
+  },
+});
+```
+
+<Callout type="security">
+Não use AsyncStorage para tokens: ele não é criptografado. `expo-secure-store` usa Keychain (iOS) e Keystore (Android).
+</Callout>

@@ -1,0 +1,18 @@
+---
+title: Contatos institucionais
+description: Telefone e e-mail da APASBAC exibidos no QR Code, gerenciados por configuração.
+status: implemented
+---
+
+Os contatos não ficam em variáveis de ambiente: são as configs `apasbac_phone` e `apasbac_email`, editáveis por ADMIN ou STAFF.
+
+```bash
+curl -X PATCH "https://apasbac-api.vercel.app/api/v1/configs/apasbac_phone" \
+  -H "Authorization: Bearer $APASBAC_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"value":"+55 44 90000-0000"}'
+```
+
+- Valor vazio (`""`) significa "não exibir".
+- Os contatos aparecem somente em <Endpoint method="GET" path="/animals/public/uuid/{uuid}" />.
+- Endpoints de configuração exigem autenticação: sites não devem ler `/configs` diretamente.

@@ -1,0 +1,43 @@
+---
+title: Cadastro
+description: Criação de conta com POST /auth/register.
+---
+
+<Endpoint method="POST" path="/auth/register" /> cria uma conta com role `USER` e já devolve uma sessão. Limite: 5 por minuto por IP.
+
+## Campos
+
+| Campo | Regras |
+| --- | --- |
+| `fullName` | 3 a 100 caracteres |
+| `phone` | Obrigatório, texto livre (ex.: `+55 44 99999-9999`) |
+| `cpf` | Exatamente 11 dígitos, sem pontos ou traço; único |
+| `email` | E-mail válido; único |
+| `password` | Mínimo 8 caracteres, com ao menos 1 maiúscula, 1 número e 1 caractere especial entre `@ $ ! % * ? &` |
+| `confirmPassword` | Igual a `password` (não é armazenado) |
+
+```bash
+curl -X POST "https://apasbac-api.vercel.app/api/v1/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fullName": "Maria Souza",
+    "phone": "+55 44 99999-0000",
+    "cpf": "12345678901",
+    "email": "maria@exemplo.com",
+    "password": "Senha@2026",
+    "confirmPassword": "Senha@2026"
+  }'
+```
+
+Resposta `201`: `data.user` (sem senha), `data.accessToken`, `data.refreshToken`. Um e-mail de boas-vindas é enviado.
+
+## Erros
+
+| Status | Motivo |
+| --- | --- |
+| `400` | Campo inválido, senhas diferentes, campo extra (como `role`) ou "E-mail ou CPF já cadastrado" |
+| `429` | Mais de 5 cadastros por minuto do mesmo IP |
+
+<Callout type="security">
+Não é possível escolher a role no cadastro: enviar `role` retorna `400`. Promoções são feitas por um ADMIN em <Endpoint method="PATCH" path="/users/{id}/role" />.
+</Callout>

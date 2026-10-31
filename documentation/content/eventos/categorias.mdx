@@ -1,0 +1,17 @@
+---
+title: Categorias
+description: Categorias administráveis de eventos.
+---
+
+<Endpoint method="GET" path="/events/categories" /> lista as categorias (ordem alfabética), sem paginação.
+
+Categorias iniciais (criadas pelo seed): Adoção, Saúde animal, Educação, Arrecadação, Voluntariado, Campanha, Evento beneficente e Outros.
+
+Somente ADMIN cria, edita ou remove categorias. Uma categoria com eventos não pode ser removida (`409`): mova os eventos antes.
+
+```bash
+curl -X POST "https://apasbac-api.vercel.app/api/v1/events/categories" \
+  -H "Authorization: Bearer $APASBAC_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Castração","description":"Mutirões de castração"}'
+```

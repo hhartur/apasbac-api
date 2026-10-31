@@ -1,0 +1,37 @@
+---
+title: Visão geral
+description: Recursos, perfis de acesso e integrações da APASBAC API em uma página.
+---
+
+## Recursos
+
+| Recurso | O que faz | Acesso |
+| --- | --- | --- |
+| [Autenticação](/api-reference/autenticacao) | Cadastro, login, renovação de sessão, logout, recuperação de senha | Público / autenticado |
+| [Usuários](/api-reference/usuarios) | Perfil do usuário logado, gestão de usuários e roles | Autenticado / ADMIN, STAFF |
+| [Animais](/api-reference/animais) | Lista pública, ficha por ID ou QR Code, cadastro e adoção | Público / ADMIN, STAFF |
+| [Monitoramentos](/api-reference/monitoramentos) | Acompanhamento pós-adoção com fotos e vídeo | TUTOR / ADMIN, STAFF |
+| [Eventos](/api-reference/eventos) | Feiras, campanhas e ações, com categorias e imagens | Público / ADMIN, STAFF |
+| [Configurações](/api-reference/configuracoes) | Período de monitoramento e contatos institucionais | ADMIN, STAFF |
+| [Uploads](/api-reference/uploads) | Assinatura para upload direto ao Cloudinary | Autenticado |
+| [Auditoria](/api-reference/auditoria) | Registro imutável das operações importantes | ADMIN |
+| [Versão do app](/api-reference/versao-do-app) | Política de atualização do app Android | Público / autenticado |
+
+## Perfis de acesso (roles)
+
+| Role | Quem é | Pode |
+| --- | --- | --- |
+| `ADMIN` | Administração da APASBAC | Tudo, incluindo roles de usuários, exclusões e auditoria |
+| `STAFF` | Equipe e voluntários | Animais, adoções, monitoramentos, eventos e configurações |
+| `TUTOR` | Pessoa que adotou um animal | Ver e enviar os próprios monitoramentos |
+| `USER` | Conta comum | Ver e editar o próprio perfil |
+
+Detalhes por endpoint em [Autorização e permissões](/docs/seguranca/autorizacao).
+
+## Tecnologia
+
+NestJS 10 e TypeScript, PostgreSQL com Prisma, autenticação JWT, mídias no Cloudinary, e-mails via SMTP (Nodemailer) e uma planilha Google Sheets usada internamente no monitoramento. A API é publicada na Vercel.
+
+<Callout type="info" title="Sobre o armazenamento de mídias">
+Versões antigas do README citavam Cloudflare R2. O código em produção usa **Cloudinary** para fotos, vídeos e QR Codes; as dependências do SDK da AWS presentes no projeto não são usadas.
+</Callout>

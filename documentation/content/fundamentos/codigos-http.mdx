@@ -1,0 +1,20 @@
+---
+title: Códigos HTTP
+description: Significado de cada status retornado pela API.
+---
+
+| Código | Quando acontece |
+| --- | --- |
+| `200 OK` | Consulta ou atualização bem-sucedida. |
+| `201 Created` | Recurso criado (e também em ações `POST`, como gerar QR Code). |
+| `204 No Content` | Sem corpo (`POST /app/update-events`). |
+| `400 Bad Request` | Validação falhou, campo desconhecido enviado, senhas diferentes, token de redefinição inválido, regra de negócio violada. |
+| `401 Unauthorized` | Token ausente, malformado, expirado, assinado com outro segredo ou de conta removida; credenciais de login inválidas; refresh token inválido ou reutilizado. |
+| `403 Forbidden` | Autenticado, mas sem a role exigida ou sem ser dono do recurso. |
+| `404 Not Found` | Recurso inexistente (ou não público, como eventos em rascunho). |
+| `409 Conflict` | Valor único repetido ou recurso vinculado a outros dados (ex.: categoria com eventos). |
+| `413 Payload Too Large` | Arquivo acima de 8 MB ou arquivos demais. |
+| `426 Upgrade Required` | App Android abaixo da versão mínima (somente com `X-App-Platform: android`). |
+| `429 Too Many Requests` | Limite de requisições excedido. Respeite `Retry-After`. |
+| `500 Internal Server Error` | Falha inesperada. A mensagem nunca expõe detalhes internos; informe o `requestId`. |
+| `503 Service Unavailable` | Somente em `GET /app/version`, quando o manifesto do GitHub está indisponível sem cache. |

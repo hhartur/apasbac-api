@@ -1,0 +1,37 @@
+---
+title: QR Codes
+description: Geração, conteúdo e consulta pública do QR Code da coleira.
+status: implemented
+---
+
+Cada animal recebe um QR Code (PNG em vermelho APASBAC) ao ser cadastrado. Ele aponta para `FRONTEND_URL/animals/{uuid}` — uma página do frontend que deve consultar a API.
+
+| Ação | Endpoint |
+| --- | --- |
+| Consultar pelo QR Code | <Endpoint method="GET" path="/animals/public/uuid/{uuid}" /> |
+| Gerar de novo (ex.: troca de domínio) | <Endpoint method="POST" path="/animals/{id}/qrcode/regenerate" /> |
+| URL da imagem | campo `qrCodeUrl` em <Endpoint method="GET" path="/animals/{id}" /> |
+
+## Resposta pública do QR Code
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 11, "name": "Leão", "breed": "Vira-Lata", "sex": "MALE", "size": "LARGE",
+    "description": "…", "vaccines": ["V10"], "temperament": "Brincalhão",
+    "escapeTendency": false, "isAdopted": true, "photos": ["https://…"],
+    "apasbac": { "phone": "+55 44 9…", "email": "contato@…" },
+    "tutor": { "name": "Maria Souza", "phone": "…", "email": "…" }
+  },
+  "timestamp": "…"
+}
+```
+
+- `apasbac.phone` e `apasbac.email` podem ser `null` ou vazios: nesse caso, não exiba.
+- `tutor` é `null` quando o animal não está adotado.
+- O endereço da APASBAC nunca é retornado.
+
+<Callout type="security">
+Trate o `uuid` como uma chave: quem o tem vê o contato do tutor. Não liste, não indexe e não publique UUIDs fora da coleira.
+</Callout>

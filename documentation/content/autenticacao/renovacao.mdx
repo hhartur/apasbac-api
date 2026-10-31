@@ -1,0 +1,26 @@
+---
+title: Renovação de sessão
+description: Como renovar o access token com POST /auth/refresh.
+---
+
+<Endpoint method="POST" path="/auth/refresh" /> — público, limite de 30 por minuto por IP.
+
+```bash
+curl -X POST "https://apasbac-api.vercel.app/api/v1/auth/refresh" \
+  -H "Content-Type: application/json" \
+  -d '{"refreshToken":"eyJhbGciOiJIUzI1NiIs…"}'
+```
+
+Resposta `200`:
+
+```json
+{ "success": true, "data": { "accessToken": "…", "refreshToken": "…" }, "timestamp": "…" }
+```
+
+## Algoritmo recomendado
+
+1. Faça a requisição com o access token atual.
+2. Se a resposta for `401` e a requisição ainda não foi repetida, renove (uma única renovação por vez).
+3. Se a renovação der certo, salve **os dois** tokens novos e repita a requisição original uma vez.
+4. Se a renovação responder `401`, a sessão terminou: limpe os tokens e peça login.
+5. Se a renovação falhar por rede ou `5xx`, **não** apague a sessão; tente mais tarde.

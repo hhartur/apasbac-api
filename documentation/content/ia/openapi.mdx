@@ -1,0 +1,28 @@
+---
+title: OpenAPI
+description: A especificação como fonte de verdade e como usá-la com ferramentas.
+---
+
+A especificação é gerada a partir dos decorators do NestJS (`npm run openapi:export` no repositório da API) e publicada em:
+
+- esta documentação: [`/openapi.json`](/openapi.json)
+- a própria API: `https://apasbac-api.vercel.app/openapi.json` (a partir da v1.1.0)
+
+## Extensões
+
+| Extensão | Significado |
+| --- | --- |
+| `x-public: true` | Não exige autenticação (`GET /animals` aceita token opcional) |
+| `x-roles: ["ADMIN", "STAFF"]` | Roles exigidas; ausente em operações protegidas = qualquer usuário autenticado |
+
+## Usos
+
+```bash
+# Tipos TypeScript
+npx openapi-typescript https://SUA-DOCUMENTACAO/openapi.json -o apasbac.d.ts
+
+# Cliente para várias linguagens
+npx @openapitools/openapi-generator-cli generate -i openapi.json -g dart -o ./apasbac_client
+```
+
+O CI da API falha se o `openapi.json` versionado estiver diferente do gerado pelo código (`npm run openapi:check`).

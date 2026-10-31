@@ -1,0 +1,38 @@
+---
+title: Changelog
+description: Histórico de versões da APASBAC API, do mais recente ao mais antigo.
+---
+
+## 1.1.0 — 2026-10-31
+
+### FEATURE
+- **Eventos**: `GET /events`, `GET /events/{id}`, `GET /events/slug/{slug}`, `GET /events/categories`, criação, edição, exclusão, capa, galeria e categorias administráveis; `GET /admin/events` e `GET /admin/events/{id}`.
+- **Auditoria**: tabela imutável e `GET /admin/audit-logs`, `GET /admin/audit-logs/{id}` (ADMIN).
+- `POST /auth/logout` sem `refreshToken` encerra todas as sessões.
+- `GET /openapi.json` público na API; header `X-Request-Id` em todas as respostas.
+- Erros incluem `requestId`; `P2025`/`P2002`/`P2003` do banco viram `404`/`409` em vez de `500`.
+
+### SECURITY
+- Refresh tokens com `jti`, armazenados como hash, rotação por família e detecção de reutilização.
+- Redefinição de senha encerra todas as sessões e invalida outros links; tokens de redefinição guardados como hash.
+- Login com tempo de resposta uniforme; limites por rota em cadastro, login, refresh e senha.
+- `POST /storage/signed-upload`: pastas permitidas por role, `allowed_formats` assinado; `public_id`, `overwrite`, `upload_preset` e `eager` restritos à equipe.
+- Uploads multipart limitados a 8 MB e validados pelo conteúdo real.
+- `GET /animals` público não expõe mais `uuid`, `qrCodeUrl` e dados do adotante (exceto para equipe e o próprio tutor).
+- `POST /monitoring/{id}/submit` aceita apenas mídias da conta Cloudinary da API.
+- `POST /animals/{id}/adopter` não rebaixa mais ADMIN/STAFF para TUTOR.
+- STAFF não altera dados de ADMIN; ADMIN não altera a própria role nem remove a própria conta.
+- Headers de segurança (helmet), CORS com `CORS_ORIGINS`, e-mails com escape de HTML.
+- Seed não cria admin com senha padrão em produção.
+
+### FIX
+- Dois logins no mesmo segundo geravam refresh tokens idênticos e erro 500.
+- Build gerava `dist/src/main.js`, quebrando `npm run start:prod` e o Dockerfile.
+- Validação de UUID em parâmetros de rota (`400` em vez de `404`/`500` para IDs malformados).
+
+### BREAKING CHANGE
+- Nenhuma quebra no contrato documentado. Atenção a mudanças de comportamento: `GET /animals` sem token omite `uuid`/`qrCodeUrl`/adotante; corpo de `POST /animals/{id}/adopter` agora é validado (`userId` UUID, sem campos extras); parâmetros UUID malformados retornam `400`.
+
+## 1.0.0
+
+Versão inicial: autenticação JWT, usuários, animais com QR Code, monitoramentos, configurações, upload assinado e política de versão Android.

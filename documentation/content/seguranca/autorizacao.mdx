@@ -1,0 +1,36 @@
+---
+title: Autorização e permissões
+description: Matriz de permissões por role e proteções contra IDOR e escalada de privilégios.
+---
+
+A autorização acontece **no servidor**, em toda requisição. Esconder botões no frontend é só experiência de uso.
+
+## Matriz
+
+| Ação | ADMIN | STAFF | TUTOR | USER | Público |
+| --- | :-: | :-: | :-: | :-: | :-: |
+| Ver lista/ficha pública de animais e eventos | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Ver o próprio perfil e editar nome/telefone | ✓ | ✓ | ✓ | ✓ | |
+| Listar e ver usuários | ✓ | ✓ | | | |
+| Editar perfil de outro usuário | ✓ | ✓ (exceto ADMIN) | | | |
+| Alterar role / remover usuário | ✓ (exceto a si mesmo) | | | | |
+| Cadastrar/editar animais, vincular adotante, gerar QR | ✓ | ✓ | | | |
+| Remover animal | ✓ | | | | |
+| Criar e revisar monitoramentos, listar todos | ✓ | ✓ | | | |
+| Ver/enviar o próprio monitoramento | ✓ | ✓ | ✓ | ✓¹ | |
+| Remover monitoramento | ✓ | | | | |
+| Criar/editar eventos e imagens, ver rascunhos | ✓ | ✓ | | | |
+| Remover evento; gerenciar categorias | ✓ | | | | |
+| Ler/editar configurações | ✓ | ✓ | | | |
+| Remover configuração | ✓ | | | | |
+| Consultar auditoria | ✓ | | | | |
+
+¹ O envio exige ser o dono do monitoramento; a consulta por ID é liberada a TUTOR, ADMIN e STAFF.
+
+## Proteções específicas
+
+- **IDOR**: `PATCH /users/:id` compara o ID com o usuário autenticado; `GET /monitoring/:id` e `POST /monitoring/:id/submit` verificam a propriedade.
+- **Escalada de privilégios**: a role não pode ser enviada no cadastro nem no `PATCH /users/:id` (campo desconhecido = 400); só ADMIN usa `PATCH /users/:id/role`, e nunca em si mesmo.
+- **Mass assignment**: todos os corpos são validados contra DTOs com `whitelist` e `forbidNonWhitelisted`.
+- **Vínculo de adoção**: só promove `USER` a `TUTOR`; nunca rebaixa membros da equipe.
+- **Dados vinculados ao QR**: a listagem pública não expõe `uuid` nem adotante.

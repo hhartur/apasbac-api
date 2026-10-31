@@ -1,0 +1,74 @@
+---
+title: Login
+description: Autenticação por e-mail e senha com POST /auth/login.
+---
+
+<Endpoint method="POST" path="/auth/login" /> recebe `email` e `password` e devolve a sessão. Limite: 10 por minuto por IP.
+
+<CodeGroup titles="cURL,JavaScript,Python,PHP,Dart">
+
+```bash
+curl -X POST "https://apasbac-api.vercel.app/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"usuario@exemplo.com","password":"SENHA_DO_USUARIO"}'
+```
+
+```javascript
+const res = await fetch('https://apasbac-api.vercel.app/api/v1/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email, password }),
+});
+const body = await res.json();
+if (!res.ok) throw new Error(body.message);
+const { user, accessToken, refreshToken } = body.data;
+```
+
+```python
+import requests
+r = requests.post("https://apasbac-api.vercel.app/api/v1/auth/login",
+                  json={"email": email, "password": password}, timeout=15)
+r.raise_for_status()
+session = r.json()["data"]  # user, accessToken, refreshToken
+```
+
+```php
+<?php
+$ch = curl_init('https://apasbac-api.vercel.app/api/v1/auth/login');
+curl_setopt_array($ch, [
+    CURLOPT_POST => true,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+    CURLOPT_POSTFIELDS => json_encode(['email' => $email, 'password' => $password]),
+]);
+$session = json_decode(curl_exec($ch), true)['data'];
+```
+
+```dart
+final res = await http.post(
+  Uri.parse('https://apasbac-api.vercel.app/api/v1/auth/login'),
+  headers: {'Content-Type': 'application/json'},
+  body: jsonEncode({'email': email, 'password': password}),
+);
+final session = jsonDecode(res.body)['data'];
+```
+
+</CodeGroup>
+
+## Resposta
+
+```json
+{
+  "success": true,
+  "data": {
+    "user": { "id": "3f2b…", "fullName": "Maria Souza", "email": "maria@exemplo.com", "role": "USER", "phone": "…", "cpf": "…", "createdAt": "…", "updatedAt": "…" },
+    "accessToken": "eyJhbGciOiJIUzI1NiIs…",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIs…"
+  },
+  "timestamp": "2026-10-31T12:00:00.000Z"
+}
+```
+
+## Erros
+
+`401 Credenciais inválidas` — a mesma resposta para e-mail inexistente e senha errada, com tempo de resposta equivalente, para não revelar quais e-mails têm conta.

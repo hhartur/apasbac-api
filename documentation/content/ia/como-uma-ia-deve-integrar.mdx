@@ -1,0 +1,89 @@
+---
+title: Como uma IA deve integrar a APASBAC API
+description: Manual operacional para agentes de IA que vão implementar uma integração em qualquer projeto.
+---
+
+<Callout type="info" title="Para agentes">
+Leia esta página inteira antes de escrever código. Fontes estruturadas: [`/openapi.json`](/openapi.json) (contratos), [`/llms-full.txt`](/llms-full.txt) (documentação completa), [`/AGENTS.md`](/AGENTS.md) (regras).
+</Callout>
+
+## 1. O que é a APASBAC
+
+Associação de Proteção aos Animais Socorro Bicho, de Assis Chateaubriand (PR). Resgata animais, promove adoções, acompanha os animais adotados e realiza eventos.
+
+## 2. O que a API oferece
+
+Animais (lista pública, ficha, QR Code), autenticação JWT, usuários e roles, monitoramento pós-adoção, eventos institucionais com categorias e imagens, configurações, upload assinado de mídias, auditoria e política de versão do app Android. Lista completa: [Referência da API](/api-reference).
+
+## 3. Onde consultar os endpoints
+
+`/openapi.json`. Cada operação traz `x-public` (sem token) e `x-roles` (roles exigidas). Se algo não está no OpenAPI, **não existe**.
+
+## 4. Como autenticar
+
+`POST /api/v1/auth/login` com `{ email, password }` → `data.accessToken` (15 min) e `data.refreshToken` (7 dias, uso único). Envie `Authorization: Bearer` + access token.
+
+## 5. Como renovar tokens
+
+`POST /api/v1/auth/refresh` com `{ refreshToken }` → novo par. Substitua os **dois**. Serialize renovações concorrentes. `401` na renovação = sessão encerrada.
+
+## 6. Como identificar permissões
+
+`GET /api/v1/users/me` → `data.role`. Compare com `x-roles` da operação. Não use a role decodificada do JWT para decisões.
+
+## 7. Como consultar animais
+
+`GET /api/v1/animals?isAdopted=false&page=1&limit=12` (público). Ficha: `GET /api/v1/animals/public/{id}`. QR Code: `GET /api/v1/animals/public/uuid/{uuid}`.
+
+## 8. Como consultar eventos
+
+`GET /api/v1/events?when=upcoming` (público), `GET /api/v1/events/slug/{slug}`, `GET /api/v1/events/categories`.
+
+## 9. Como trabalhar com imagens
+
+Exibição: URLs prontas (`photos`, `coverImageUrl`, `galleryUrls`). Envio: [Upload seguro](/docs/seguranca/upload-seguro) — multipart nos endpoints de imagem ou assinatura em `/storage/signed-upload` com pasta permitida para a role.
+
+## 10. Como tratar erros
+
+Formato `{ success: false, statusCode, error, message, requestId }`; `message` pode ser lista. Tabela de ações em [Tratamento de erros](/docs/fundamentos/erros).
+
+## 11. Como proteger informações
+
+Sem segredos no frontend, sem tokens em `localStorage`/URLs/logs, escape de textos, nada de dados pessoais além do necessário. Detalhes em [Regras de segurança para agentes](/docs/ia/regras-de-seguranca).
+
+## 12. Como implementar uma integração
+
+Siga o [processo de integração](/docs/ia/instrucoes) e adapte ao projeto existente — [guias por tecnologia](/docs/guias/javascript).
+
+## 13. Como testar
+
+- Teste o cliente HTTP com respostas simuladas no **formato real** (envelope, paginação, erro com `message` em lista).
+- Teste: `401` seguido de renovação; renovação com `401`; `403`; `429`; lista vazia.
+- Rode contra a API local (`http://localhost:3000/api/v1`) antes de produção.
+
+## 14. Como evitar implementações incorretas
+
+| Erro comum | Correto |
+| --- | --- |
+| Ler `response.animals` ou `response.items` | `response.data.data` (lista paginada) |
+| Reaproveitar o refresh token após renovar | Usar sempre o novo |
+| Mandar `role` no cadastro | Não existe; um ADMIN altera roles |
+| Inventar `GET /tutors`, `GET /adoptions`, `/health` | Não existem — veja [Tutores](/docs/referencia/tutores), [Adoções](/docs/referencia/adocoes), [Status](/docs/inicio/status) |
+| Usar o `uuid` de animais da lista pública | A lista pública não traz `uuid`; ele vem do QR Code |
+| Guardar token de ADMIN no site | Proibido; use backend e conta com role mínima |
+
+## Fluxo de decisão
+
+<Steps>
+<Step title="O recurso é público?">Use o endpoint público correspondente, sem token.</Step>
+<Step title="Exige autenticação?">Implemente login e renovação.</Step>
+<Step title="Exige permissão administrativa?">Verifique a role do usuário antes de oferecer a ação; trate `403`.</Step>
+<Step title="Há upload?">Siga o guia de arquivos.</Step>
+<Step title="Houve erro?">Consulte a tabela de erros.</Step>
+<Step title="Não há endpoint documentado?">Não invente um. Informe o usuário.</Step>
+<Step title="O contrato não está claro?">Peça esclarecimento ou leia o código-fonte da API.</Step>
+</Steps>
+
+<Callout type="warning" title="Consumir, não recriar">
+Adapte a integração à arquitetura do projeto que você está modificando. Não copie a arquitetura da APASBAC (NestJS, Prisma) para outros projetos — o objetivo é consumir a API.
+</Callout>

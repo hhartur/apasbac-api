@@ -1,0 +1,32 @@
+---
+title: Limites de requisições
+description: Rate limiting por IP, limites de corpo e de upload.
+---
+
+## Rate limiting
+
+| Escopo | Limite por IP |
+| --- | --- |
+| Global (todos os endpoints) | 100 requisições por 60 s (configurável no servidor) |
+| `POST /auth/login` | 10 por minuto |
+| `POST /auth/register` | 5 por minuto |
+| `POST /auth/refresh` | 30 por minuto |
+| `POST /auth/forgot-password` | 5 por minuto |
+| `POST /auth/reset-password` | 10 por minuto |
+| `POST /app/update-events` | 30 por minuto |
+
+Cada resposta inclui `X-RateLimit-Limit`, `X-RateLimit-Remaining` e `X-RateLimit-Reset` (segundos). Ao exceder, a API responde `429` com `Retry-After`.
+
+## Tamanhos
+
+| Item | Limite |
+| --- | --- |
+| Corpo JSON | 100 KB |
+| Imagem enviada à API | 8 MB, JPEG/PNG/WebP |
+| Fotos por animal | 3 |
+| Galeria por evento | 12 imagens |
+| Imagens por monitoramento | 1 a 10 URLs |
+
+<Callout type="info">
+Os contadores ficam em memória em cada instância do servidor. Em hospedagem com várias instâncias, o limite efetivo pode ser maior; não dependa disso.
+</Callout>

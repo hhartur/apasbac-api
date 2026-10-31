@@ -1,0 +1,22 @@
+---
+title: Administração
+description: Operações exclusivas da equipe e da administração.
+status: implemented
+---
+
+| Área | Endpoints | Roles |
+| --- | --- | --- |
+| Usuários | <Endpoint method="GET" path="/users" />, <Endpoint method="PATCH" path="/users/{id}/role" />, <Endpoint method="DELETE" path="/users/{id}" /> | ADMIN, STAFF (lista) · ADMIN (role, exclusão) |
+| Animais | <Endpoint method="POST" path="/animals" />, <Endpoint method="PATCH" path="/animals/{id}" />, <Endpoint method="DELETE" path="/animals/{id}" /> | ADMIN, STAFF · ADMIN (exclusão) |
+| Monitoramentos | <Endpoint method="GET" path="/monitoring" />, <Endpoint method="PATCH" path="/monitoring/{id}/review" /> | ADMIN, STAFF |
+| Eventos | <Endpoint method="GET" path="/admin/events" />, <Endpoint method="POST" path="/events" /> | ADMIN, STAFF |
+| Categorias de eventos | <Endpoint method="POST" path="/events/categories" /> | ADMIN |
+| Configurações | <Endpoint method="GET" path="/configs" /> | ADMIN, STAFF |
+| Auditoria | <Endpoint method="GET" path="/admin/audit-logs" /> | ADMIN |
+
+## Proteções
+
+- Um ADMIN não pode alterar a própria role nem remover a própria conta.
+- STAFF não altera dados de um ADMIN.
+- Usuários com monitoramentos vinculados não podem ser removidos (`409`).
+- Toda ação administrativa é auditada.

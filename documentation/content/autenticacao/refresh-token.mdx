@@ -1,0 +1,39 @@
+---
+title: Refresh Token
+description: Uso único, rotação, famílias de sessão e detecção de reutilização.
+---
+
+O refresh token é um JWT com validade padrão de **7 dias** (`JWT_REFRESH_EXPIRES_IN`), identificador único (`jti`) e armazenado no servidor apenas como hash.
+
+## Regras
+
+1. **Uso único.** Cada chamada a `/auth/refresh` invalida o token enviado e devolve um novo par.
+2. **Família.** Todos os tokens gerados a partir de um login formam uma sessão.
+3. **Reutilização.** Se um token já trocado voltar a ser usado depois de 10 segundos, a API assume vazamento: revoga a sessão inteira, responde `401` e registra `AUTH_REFRESH_REUSE_DETECTED`.
+4. **Concorrência.** Duas renovações simultâneas com o mesmo token (menos de 10 s) não derrubam a sessão: a primeira vence, a segunda recebe `401`. Serialize renovações no cliente para evitar isso.
+
+## Serializando renovações
+
+```typescript
+let refreshing: Promise<boolean> | null = null;
+
+export function refreshOnce(): Promise<boolean> {
+  refreshing ??= (async () => {
+    try {
+      const res = await fetch('https://apasbac-api.vercel.app/api/v1/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: tokens.refresh }),
+      });
+      if (!res.ok) return false;
+      const { data } = await res.json();
+      tokens.access = data.accessToken;
+      tokens.refresh = data.refreshToken; // sempre substitua os dois
+      return true;
+    } finally {
+      refreshing = null;
+    }
+  })();
+  return refreshing;
+}
+```

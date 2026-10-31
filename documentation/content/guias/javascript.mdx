@@ -1,0 +1,73 @@
+---
+title: Integração com JavaScript
+description: Cliente HTTP com fetch, envelope, erros e renovação automática de token.
+---
+
+Funciona em navegadores modernos, Node.js 18+, Deno e Bun — sem dependências.
+
+## Cliente
+
+```javascript
+const API = 'https://apasbac-api.vercel.app/api/v1';
+
+export class ApasbacError extends Error {
+  constructor(status, message, requestId) {
+    super(Array.isArray(message) ? message.join('; ') : message);
+    this.status = status;
+    this.requestId = requestId;
+  }
+}
+
+export function createClient({ getTokens, setTokens, onLogout } = {}) {
+  let refreshing = null;
+
+  async function refresh() {
+    refreshing ??= (async () => {
+      const tokens = getTokens?.();
+      if (!tokens?.refreshToken) return false;
+      const res = await fetch(`${API}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: tokens.refreshToken }),
+      });
+      if (res.status === 401) { onLogout?.(); return false; }
+      if (!res.ok) return false;
+      const { data } = await res.json();
+      setTokens?.(data);
+      return true;
+    })().finally(() => { refreshing = null; });
+    return refreshing;
+  }
+
+  async function request(path, { method = 'GET', body, auth = false, retried = false } = {}) {
+    const headers = {};
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    if (auth) headers.Authorization = `Bearer ${getTokens?.()?.accessToken}`;
+    const res = await fetch(`${API}${path}`, {
+      method, headers, body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (res.status === 401 && auth && !retried && (await refresh())) {
+      return request(path, { method, body, auth, retried: true });
+    }
+    if (res.status === 204) return undefined;
+    const json = await res.json();
+    if (!res.ok) throw new ApasbacError(res.status, json.message, json.requestId);
+    return json.data;
+  }
+
+  return { request };
+}
+```
+
+## Uso
+
+```javascript
+const api = createClient();
+const { data: animais } = await api.request('/animals?isAdopted=false');
+const { data: eventos } = await api.request('/events?when=upcoming');
+```
+
+<Callout type="security">
+No navegador, mantenha tokens em memória (variável do módulo). Para sessões que sobrevivem ao recarregamento, use um backend: veja [Backend próprio](/docs/guias/backend-proprio).
+</Callout>

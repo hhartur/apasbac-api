@@ -1,0 +1,25 @@
+---
+title: Contexto da API
+description: Glossário e regras de negócio que um modelo precisa conhecer.
+---
+
+## Glossário
+
+| Termo | Significado |
+| --- | --- |
+| APASBAC / Socorro Bicho | A associação |
+| Tutor | Pessoa que adotou um animal (role `TUTOR`) |
+| Equipe | Usuários `STAFF` e `ADMIN` |
+| Monitoramento | Prestação de contas periódica do tutor com fotos e vídeo |
+| QR Code | Código na coleira que leva à ficha pública com contatos |
+| Evento | Ação institucional divulgada ao público |
+
+## Regras de negócio
+
+- Animais têm até 3 fotos.
+- Vincular adotante marca o animal como adotado e promove `USER` a `TUTOR`.
+- Prazo do monitoramento = agora + `monitoring_period_value` `monitoring_period_unit` (padrão: 6 meses).
+- Envio do monitoramento: 1 vídeo + 1 a 10 imagens, somente com status `PENDING`; passa a `IN_REVIEW`.
+- Revisão aprova (`APPROVED`) ou rejeita (`REJECTED`), envia e-mail e apaga as mídias.
+- Eventos nascem como `DRAFT`; só `PUBLISHED`, `CANCELLED` e `FINISHED` são públicos.
+- Contatos institucionais vazios não devem ser exibidos.

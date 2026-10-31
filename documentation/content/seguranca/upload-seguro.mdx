@@ -1,0 +1,57 @@
+---
+title: Upload seguro
+description: Upload direto assinado, upload pela API e todas as validações aplicadas.
+---
+
+Há dois caminhos, ambos para o Cloudinary (o binário nunca vai para o banco).
+
+## 1. Upload pela API (multipart)
+
+Usado em `POST /animals`, `PATCH /animals/:id`, `POST /events/:id/image` e `POST /events/:id/gallery`.
+
+| Verificação | Regra |
+| --- | --- |
+| Tamanho | 8 MB por arquivo (`413` acima disso) |
+| Quantidade | 3 fotos por animal, 1 capa, até 12 imagens na galeria |
+| Conteúdo real | Assinatura binária (magic bytes) precisa ser JPEG, PNG ou WebP |
+| Extensão | Precisa corresponder ao conteúdo (`.png` com conteúdo JPEG é recusado) |
+| MIME declarado | Igual ao detectado (ou `application/octet-stream`) |
+| Nome | Gerado aleatoriamente pelo Cloudinary; o nome enviado é ignorado |
+| Pasta | Fixa no servidor (sem path traversal) |
+| Processamento | Redimensionamento para no máximo 2000 px e recompressão (`quality: auto`) |
+
+## 2. Upload direto assinado
+
+<Endpoint method="POST" path="/storage/signed-upload" /> devolve uma assinatura para o cliente enviar o arquivo direto ao Cloudinary.
+
+| Pasta | Quem pode | `resource_type` |
+| --- | --- | --- |
+| `monitoring/images` | Qualquer usuário autenticado | `image` |
+| `monitoring/videos` | Qualquer usuário autenticado | `video` |
+| `animals/photos`, `events/covers`, `events/gallery` | ADMIN, STAFF | `image` ou `auto` |
+
+- A assinatura inclui `allowed_formats`: o Cloudinary recusa arquivos cujo formato real não esteja na lista.
+- Apenas ADMIN/STAFF podem usar `public_id`, `overwrite`, `upload_preset` e `eager` — usuários comuns não conseguem sobrescrever arquivos existentes.
+- URLs enviadas depois (monitoramentos e eventos) precisam pertencer à conta Cloudinary da API.
+
+```javascript
+// 1. assinatura
+const sig = await api.request('/storage/signed-upload', {
+  method: 'POST', auth: true, body: { folder: 'monitoring/images', resource_type: 'image' },
+});
+// 2. envio direto, SEM o header Authorization da APASBAC
+const form = new FormData();
+for (const [k, v] of Object.entries(sig.form_fields)) form.append(k, String(v));
+form.append('file', arquivo);
+const up = await fetch(sig.upload_url, { method: 'POST', body: form }).then((r) => r.json());
+// 3. use up.secure_url no endpoint da APASBAC
+```
+
+## Exclusão
+
+- Fotos substituídas de animais, capas e imagens removidas de eventos são apagadas do storage.
+- Mídias de monitoramento são apagadas após a revisão.
+
+<Callout type="warning" title="Limitações conhecidas">
+Não há antivírus nos arquivos; a defesa é aceitar apenas formatos de imagem/vídeo verificados. As URLs do Cloudinary são públicas (não assinadas): não envie imagens com dados pessoais.
+</Callout>

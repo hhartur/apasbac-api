@@ -1,0 +1,26 @@
+---
+title: Localização
+description: Local, endereço, cidade, UF, CEP e coordenadas de eventos.
+---
+
+| Campo | Regras |
+| --- | --- |
+| `locationName` | Até 150 caracteres (ex.: "Praça da Matriz") |
+| `address` | Até 200 caracteres |
+| `city` | Até 100 caracteres |
+| `state` | UF com 2 letras maiúsculas |
+| `postalCode` | CEP (`85935-000` ou `85935000`) |
+| `latitude`, `longitude` | Graus decimais válidos |
+
+Todos são opcionais. Mostre apenas o que estiver preenchido.
+
+```javascript
+const linhas = [e.locationName, e.address, [e.city, e.state].filter(Boolean).join(' - ')].filter(Boolean);
+const mapa = e.latitude != null && e.longitude != null
+  ? `https://www.openstreetmap.org/?mlat=${e.latitude}&mlon=${e.longitude}#map=17/${e.latitude}/${e.longitude}`
+  : null;
+```
+
+<Callout type="info">
+O endereço da sede da APASBAC não é exposto pela API. Eventos mostram apenas o local informado pela equipe para aquele evento.
+</Callout>

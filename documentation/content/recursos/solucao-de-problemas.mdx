@@ -1,0 +1,20 @@
+---
+title: Solução de problemas
+description: Erros frequentes e como resolvê-los.
+---
+
+| Sintoma | Causa provável | Solução |
+| --- | --- | --- |
+| `400` com `property X should not exist` | Campo não documentado no corpo | Remova o campo; confira o OpenAPI |
+| `401` logo após login | Header sem `Bearer ` ou token do refresh no lugar do access | `Authorization: Bearer <accessToken>` |
+| `401` ao renovar | Refresh token já usado, expirado ou sessão revogada | Faça login de novo; sempre salve o novo refresh token |
+| Usuário deslogado ao abrir várias telas | Renovações paralelas com o mesmo token | Serialize a renovação |
+| `403` | Role insuficiente ou recurso de outro usuário | Verifique `GET /users/me` |
+| Erro de CORS no navegador | Origem fora de `CORS_ORIGINS` ou URL errada | Confirme a URL; use backend próprio |
+| `413` | Arquivo maior que 8 MB | Reduza a imagem |
+| `400` em upload de imagem válida | Extensão não corresponde ao conteúdo (ex.: HEIC renomeado) | Converta para JPEG/PNG/WebP |
+| `403` em `/storage/signed-upload` | Pasta não permitida para a role | Use `monitoring/images` ou `monitoring/videos` |
+| `429` | Limite de requisições | Aguarde `Retry-After`; use cache |
+| `404` em evento existente | Evento em rascunho | Publique o evento ou use `/admin/events/{id}` |
+
+Ao pedir ajuda, informe método, rota, status e `requestId` — nunca o token.

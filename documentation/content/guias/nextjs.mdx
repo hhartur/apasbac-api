@@ -1,0 +1,87 @@
+---
+title: Integração com Next.js
+description: Server Components para dados públicos, Route Handlers para login e cookies httpOnly.
+---
+
+## Dados públicos em Server Components
+
+```tsx
+// app/eventos/page.tsx
+const API = process.env.APASBAC_API_URL ?? 'https://apasbac-api.vercel.app/api/v1';
+
+export const revalidate = 300; // revalida a cada 5 minutos
+
+export default async function Eventos() {
+  const res = await fetch(`${API}/events?when=upcoming&limit=12`, { next: { revalidate: 300 } });
+  if (!res.ok) return <p>Não foi possível carregar os eventos.</p>;
+  const { data } = await res.json();
+  return (
+    <ul>
+      {data.data.map((e: { id: number; title: string; startsAt: string; timezone: string }) => (
+        <li key={e.id}>
+          {e.title} — {new Date(e.startsAt).toLocaleString('pt-BR', { timeZone: e.timezone })}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+## Login com Route Handler e cookie httpOnly
+
+```typescript
+// app/api/login/route.ts
+import { cookies } from 'next/headers';
+
+const API = process.env.APASBAC_API_URL!;
+
+export async function POST(req: Request) {
+  const { email, password } = await req.json();
+  const res = await fetch(`${API}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const body = await res.json();
+  if (!res.ok) return Response.json({ message: body.message }, { status: res.status });
+
+  const jar = await cookies();
+  const opts = { httpOnly: true, secure: true, sameSite: 'lax' as const, path: '/' };
+  jar.set('apasbac_at', body.data.accessToken, { ...opts, maxAge: 15 * 60 });
+  jar.set('apasbac_rt', body.data.refreshToken, { ...opts, maxAge: 7 * 24 * 3600 });
+  return Response.json({ user: body.data.user });
+}
+```
+
+```typescript
+// lib/apasbac-server.ts — chamadas autenticadas no servidor
+import { cookies } from 'next/headers';
+
+export async function apasbacAuthed(path: string, init: RequestInit = {}) {
+  const jar = await cookies();
+  const call = (token?: string) => fetch(`${process.env.APASBAC_API_URL}${path}`, {
+    ...init, cache: 'no-store',
+    headers: { ...init.headers, Authorization: `Bearer ${token}` },
+  });
+  let res = await call(jar.get('apasbac_at')?.value);
+  if (res.status === 401 && jar.get('apasbac_rt')) {
+    const r = await fetch(`${process.env.APASBAC_API_URL}/auth/refresh`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: jar.get('apasbac_rt')!.value }),
+    });
+    if (r.ok) {
+      const { data } = await r.json();
+      // Em Server Components os cookies são só leitura: faça a renovação em Route Handlers/Server Actions.
+      jar.set('apasbac_at', data.accessToken, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 900 });
+      jar.set('apasbac_rt', data.refreshToken, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 604800 });
+      res = await call(data.accessToken);
+    }
+  }
+  return res;
+}
+```
+
+<Callout type="security">
+- Use `APASBAC_API_URL` sem o prefixo `NEXT_PUBLIC_`.
+- Cookies `SameSite=Lax` e rotas de mutação aceitando apenas `POST` protegem contra CSRF; para formulários de outros domínios, valide também o header `Origin`.
+</Callout>

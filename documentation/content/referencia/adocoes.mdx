@@ -1,0 +1,26 @@
+---
+title: Adoções
+description: Como uma adoção é registrada e o que muda depois dela.
+status: implemented
+---
+
+Não existe um recurso `/adoptions`. A adoção é o vínculo entre um animal e um usuário.
+
+<Steps>
+<Step title="Vincular o adotante">
+<Endpoint method="POST" path="/animals/{id}/adopter" /> com `{ "userId": "…" }` (ADMIN ou STAFF). O animal passa a `isAdopted: true` e o usuário, se for `USER`, passa a `TUTOR`. Roles `ADMIN`, `STAFF` e `TUTOR` são mantidas.
+</Step>
+<Step title="Agendar monitoramentos">
+<Endpoint method="POST" path="/monitoring" /> com `animalId` e `tutorId`. O prazo (`dueDate`) é calculado pelas configs `monitoring_period_value` e `monitoring_period_unit`.
+</Step>
+<Step title="Acompanhar">
+Veja [Monitoramentos](/api-reference/monitoramentos).
+</Step>
+</Steps>
+
+| Ação | Disponível |
+| --- | --- |
+| Registrar adoção | <Status value="implemented" /> |
+| Desfazer adoção | <Status value="partial" /> via <Endpoint method="PATCH" path="/animals/{id}" /> em JSON com `isAdopted: false` e `adoptedById: null`; a role do usuário não é revertida |
+| Solicitação de adoção pelo público | <Status value="not-implemented" /> |
+| Histórico de adoções | <Status value="partial" /> pela [auditoria](/api-reference/auditoria), ação `ADOPTION_LINK` |

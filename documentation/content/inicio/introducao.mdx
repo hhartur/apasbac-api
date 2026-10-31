@@ -1,0 +1,35 @@
+---
+title: Introdução
+description: O que é a APASBAC API, para quem ela existe e como esta documentação está organizada.
+---
+
+A **APASBAC API** é a API REST oficial da APASBAC — Associação de Proteção aos Animais Socorro Bicho, de Assis Chateaubriand, Paraná. Ela alimenta o aplicativo da associação e pode ser usada por qualquer site, sistema ou agente de IA que precise mostrar animais para adoção, identificar um animal pelo QR Code da coleira, divulgar eventos ou, com as permissões certas, administrar esses dados.
+
+<Cards>
+  <Card title="Primeiros passos" href="/docs/inicio/primeiros-passos">Faça sua primeira requisição em menos de um minuto, sem cadastro.</Card>
+  <Card title="Referência da API" href="/api-reference">Todos os endpoints, gerados a partir do código da API.</Card>
+  <Card title="Eventos em qualquer site" href="/docs/eventos/integracao-em-sites">Mostre feiras de adoção e campanhas no seu site.</Card>
+  <Card title="Integração com IA" href="/docs/ia/como-uma-ia-deve-integrar">Manual operacional para agentes de código.</Card>
+</Cards>
+
+## O que você pode construir
+
+- **Vitrines de adoção** com a lista pública de animais e suas fotos.
+- **Página de identificação por QR Code**: quem encontra um animal escaneia a coleira e vê como contatar a APASBAC ou o tutor.
+- **Agenda de eventos** com feiras de adoção, campanhas de vacinação e ações educativas.
+- **Painéis internos** para a equipe (cadastro de animais, adoções, monitoramentos, eventos e auditoria).
+
+## Como esta documentação é mantida
+
+A referência de endpoints não é escrita à mão: ela é gerada a partir do arquivo [`/openapi.json`](/openapi.json), exportado diretamente dos decorators do código NestJS. Os guias e páginas conceituais citam apenas recursos implementados; quando algo não existe, a página diz isso explicitamente com um selo de status.
+
+| Selo | Significado |
+| --- | --- |
+| <Status value="implemented" /> | Disponível na API e coberto por testes. |
+| <Status value="partial" /> | Existe, com limitações descritas na página. |
+| <Status value="planned" /> | Ainda não existe; não use. |
+| <Status value="not-implemented" /> | Não existe e não há previsão. |
+
+<Callout type="info" title="Versão">
+Esta documentação descreve a API **v1.1.0**. Veja o [changelog](/docs/recursos/changelog) para saber o que mudou em relação à v1.0.
+</Callout>

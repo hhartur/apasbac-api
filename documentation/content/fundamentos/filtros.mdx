@@ -1,0 +1,18 @@
+---
+title: Filtros
+description: Filtros disponíveis em cada listagem.
+---
+
+| Endpoint | Filtros |
+| --- | --- |
+| `GET /animals` | `isAdopted` (`true`/`false`) |
+| `GET /monitoring` | `status` (`PENDING`, `IN_REVIEW`, `APPROVED`, `REJECTED`) |
+| `GET /events` | `category` (slug), `when` (`upcoming`/`past`), `from`, `to`, `city`, `q` (busca em título e resumo), `status` (`PUBLISHED`, `CANCELLED`, `FINISHED`) |
+| `GET /admin/events` | Os mesmos de `/events` e `status` incluindo `DRAFT` |
+| `GET /admin/audit-logs` | `actorId`, `actorRole`, `action`, `resource`, `resourceId`, `outcome`, `ipAddress`, `requestId`, `from`, `to` |
+
+Os filtros são combinados com **E** lógico. Parâmetros desconhecidos em `events` e `audit-logs` retornam `400`.
+
+```bash
+curl "https://apasbac-api.vercel.app/api/v1/events?category=adocao&when=upcoming&city=Assis%20Chateaubriand"
+```

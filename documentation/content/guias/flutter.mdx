@@ -1,0 +1,71 @@
+---
+title: Integração com Flutter
+description: Camada de serviços com dio, flutter_secure_storage e renovação serializada.
+---
+
+O app oficial da APASBAC usa exatamente este padrão.
+
+```yaml
+dependencies:
+  dio: ^5.4.0
+  flutter_secure_storage: ^9.0.0
+```
+
+```dart
+import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+const kBaseUrl = 'https://apasbac-api.vercel.app/api/v1';
+
+class ApasbacClient {
+  final dio = Dio(BaseOptions(baseUrl: kBaseUrl, connectTimeout: const Duration(seconds: 15)));
+  final _plain = Dio(BaseOptions(baseUrl: kBaseUrl));
+  final _storage = const FlutterSecureStorage();
+  Future<bool>? _refreshing;
+
+  ApasbacClient() {
+    dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (o, h) async {
+        final t = await _storage.read(key: 'access_token');
+        if (t != null) o.headers['Authorization'] = 'Bearer $t';
+        h.next(o);
+      },
+      onError: (e, h) async {
+        if (e.response?.statusCode == 401 && e.requestOptions.extra['retried'] != true) {
+          _refreshing ??= _refresh().whenComplete(() => _refreshing = null);
+          if (await _refreshing!) {
+            final o = e.requestOptions..extra['retried'] = true;
+            o.headers['Authorization'] = 'Bearer ${await _storage.read(key: 'access_token')}';
+            return h.resolve(await dio.fetch(o));
+          }
+        }
+        h.next(e);
+      },
+    ));
+  }
+
+  Future<bool> _refresh() async {
+    final rt = await _storage.read(key: 'refresh_token');
+    if (rt == null) return false;
+    try {
+      final r = await _plain.post('/auth/refresh', data: {'refreshToken': rt});
+      await _storage.write(key: 'access_token', value: r.data['data']['accessToken']);
+      await _storage.write(key: 'refresh_token', value: r.data['data']['refreshToken']);
+      return true;
+    } on DioException catch (e) {
+      // Só encerra a sessão quando a API recusa o token; falha de rede mantém o login.
+      if (e.response?.statusCode == 401) await _storage.deleteAll();
+      return false;
+    }
+  }
+}
+```
+
+```dart
+Future<List<Map<String, dynamic>>> eventosFuturos(ApasbacClient c) async {
+  final r = await c.dio.get('/events', queryParameters: {'when': 'upcoming'});
+  return List<Map<String, dynamic>>.from(r.data['data']['data']);
+}
+```
+
+Uploads de mídia seguem [Upload seguro](/docs/seguranca/upload-seguro): peça a assinatura em `/storage/signed-upload` e envie o arquivo ao Cloudinary com um cliente **separado**, sem o header Authorization da APASBAC.

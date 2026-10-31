@@ -1,0 +1,26 @@
+---
+title: Integração com sistemas externos
+description: Sincronizações, automações e integrações servidor a servidor.
+---
+
+## Leitura de dados públicos
+
+Para sincronizar eventos ou animais com outro sistema (site institucional, aplicativo de terceiros, planilha), consulte os endpoints públicos com cache e baixa frequência:
+
+```bash
+# A cada 15 minutos é mais que suficiente
+curl -s "https://apasbac-api.vercel.app/api/v1/events?when=upcoming&limit=50" > eventos.json
+```
+
+## Operações autenticadas
+
+Não existem API keys nem contas de serviço especiais. Para automações que alteram dados:
+
+1. Peça a um ADMIN uma conta dedicada, com a **menor** role necessária (normalmente `STAFF`).
+2. Guarde as credenciais em um cofre ou variável de ambiente do servidor.
+3. Faça login, reutilize o refresh token e renove conforme [Renovação de sessão](/docs/autenticacao/renovacao).
+4. Envie `X-Request-Id` identificando a automação (ex.: `sync-site-20261031-0001`). Todas as ações aparecem na auditoria.
+
+## Webhooks
+
+<Status value="not-implemented" /> A API não envia notificações. Use consultas periódicas.

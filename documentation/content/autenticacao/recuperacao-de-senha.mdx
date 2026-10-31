@@ -1,0 +1,20 @@
+---
+title: Recuperação de senha
+description: Solicitar o link de redefinição com POST /auth/forgot-password.
+---
+
+<Endpoint method="POST" path="/auth/forgot-password" /> recebe `{ "email": "…" }`. Limite: 5 por minuto por IP.
+
+- Responde **sempre** `200` com a mesma mensagem, exista ou não a conta (proteção contra enumeração).
+- Se a conta existir, envia um e-mail com o link `FRONTEND_URL/reset-password?token=…`.
+- O link vale **2 horas**. O token é guardado no banco apenas como hash.
+
+```bash
+curl -X POST "https://apasbac-api.vercel.app/api/v1/auth/forgot-password" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"maria@exemplo.com"}'
+```
+
+<Callout type="info" title="Página de redefinição">
+O link aponta para o frontend configurado em `FRONTEND_URL` no servidor. Essa página deve ler `token` da URL e chamar [Redefinição de senha](/docs/autenticacao/redefinicao-de-senha).
+</Callout>

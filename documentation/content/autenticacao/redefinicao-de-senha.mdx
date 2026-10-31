@@ -1,0 +1,25 @@
+---
+title: Redefinição de senha
+description: Definir nova senha com o token recebido por e-mail.
+---
+
+<Endpoint method="POST" path="/auth/reset-password" /> — limite de 10 por minuto por IP.
+
+| Campo | Regras |
+| --- | --- |
+| `token` | Valor do parâmetro `token` do link |
+| `password` | Mínimo 8, 1 maiúscula, 1 número, 1 especial (`@ $ ! % * ? &`) |
+| `confirmPassword` | Igual a `password` |
+
+```bash
+curl -X POST "https://apasbac-api.vercel.app/api/v1/auth/reset-password" \
+  -H "Content-Type: application/json" \
+  -d '{"token":"TOKEN_DO_EMAIL","password":"NovaSenha@2026","confirmPassword":"NovaSenha@2026"}'
+```
+
+Após o sucesso:
+
+- todos os outros links de redefinição do usuário são invalidados;
+- **todas as sessões** (refresh tokens) são encerradas — o usuário precisa fazer login de novo.
+
+Erros: `400` para token inválido, expirado ou já usado, senhas diferentes ou senha fraca.

@@ -64,6 +64,11 @@ export class MonitorService {
       throw new BadRequestException('Este monitoramento já foi enviado');
     }
 
+    // Media must come from this API's signed uploads, not arbitrary external links.
+    if (![dto.videoUrl, ...dto.imageUrls].every((url) => this.storage.isOwnedUrl(url))) {
+      throw new BadRequestException('As mídias devem ser enviadas pelo upload direto da APASBAC (POST /storage/signed-upload)');
+    }
+
     return this.prisma.monitoring.update({
       where: { id },
       data: {

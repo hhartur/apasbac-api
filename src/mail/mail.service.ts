@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 
+// User-controlled text (names, review notes) must not inject HTML into e-mails.
+export const esc = (v: string) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -34,9 +37,9 @@ export class MailService {
   }
 
   async sendPasswordReset(to: string, name: string, token: string): Promise<void> {
-    const link = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    const link = `${process.env.FRONTEND_URL}/reset-password?token=${encodeURIComponent(token)}`;
     const html = this.wrap(`
-      <p>Olá, <strong>${name}</strong>!</p>
+      <p>Olá, <strong>${esc(name)}</strong>!</p>
       <p>Recebemos uma solicitação para redefinir a senha da sua conta.</p>
       <p style="text-align:center"><a href="${link}" class="btn">Redefinir Senha</a></p>
       <p>Este link é válido por <strong>2 horas</strong>. Se você não solicitou, ignore este e-mail.</p>
@@ -47,7 +50,7 @@ export class MailService {
 
   async sendWelcome(to: string, name: string): Promise<void> {
     const html = this.wrap(`
-      <p>Olá, <strong>${name}</strong>! Seja bem-vindo(a) à APASBAC! 🐾</p>
+      <p>Olá, <strong>${esc(name)}</strong>! Seja bem-vindo(a) à APASBAC! 🐾</p>
       <p>Sua conta foi criada com sucesso. Agora você pode acompanhar os animais disponíveis para adoção e muito mais.</p>
       <p style="text-align:center"><a href="${process.env.FRONTEND_URL}" class="btn">Acessar o Sistema</a></p>
     `, 'Bem-vindo(a)!');
@@ -56,10 +59,10 @@ export class MailService {
 
   async sendMonitoringReminder(to: string, name: string, animalName: string, dueDate: Date): Promise<void> {
     const html = this.wrap(`
-      <p>Olá, <strong>${name}</strong>!</p>
-      <p>Está na hora de enviar o relatório de acompanhamento do seu pet <strong>${animalName}</strong>.</p>
+      <p>Olá, <strong>${esc(name)}</strong>!</p>
+      <p>Está na hora de enviar o relatório de acompanhamento do seu pet <strong>${esc(animalName)}</strong>.</p>
       <p>Prazo: <strong>${dueDate.toLocaleDateString('pt-BR')}</strong></p>
-      <p>Envie 1 vídeo e 1 foto mostrando como o ${animalName} está! 📷</p>
+      <p>Envie 1 vídeo e 1 foto mostrando como o ${esc(animalName)} está! 📷</p>
       <p style="text-align:center"><a href="${process.env.FRONTEND_URL}/monitoring" class="btn">Enviar Relatório</a></p>
     `, 'Relatório de Acompanhamento');
     await this.transporter.sendMail({ from: process.env.SMTP_FROM, to, subject: `📋 Relatório de ${animalName} pendente — APASBAC`, html });
@@ -69,11 +72,11 @@ export class MailService {
     const status = approved ? '✅ Aprovado' : '❌ Rejeitado';
     const color = approved ? '#1e8449' : '#c0392b';
     const html = this.wrap(`
-      <p>Olá, <strong>${name}</strong>!</p>
-      <p>O relatório de acompanhamento do <strong>${animalName}</strong> foi analisado.</p>
+      <p>Olá, <strong>${esc(name)}</strong>!</p>
+      <p>O relatório de acompanhamento do <strong>${esc(animalName)}</strong> foi analisado.</p>
       <p>Status: <strong style="color:${color}">${status}</strong></p>
-      ${notes ? `<p>Observações: ${notes}</p>` : ''}
-    `, `Resultado do Relatório — ${animalName}`);
+      ${notes ? `<p>Observações: ${esc(notes)}</p>` : ''}
+    `, `Resultado do Relatório — ${esc(animalName)}`);
     await this.transporter.sendMail({ from: process.env.SMTP_FROM, to, subject: `${status} — Relatório de ${animalName} | APASBAC`, html });
   }
 }

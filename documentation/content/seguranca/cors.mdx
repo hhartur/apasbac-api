@@ -1,0 +1,18 @@
+---
+title: CORS
+description: Como a API trata origens de navegador — e por que CORS não é autenticação.
+---
+
+- A API usa autenticação por **Bearer token**, não por cookies. Por isso `Access-Control-Allow-Credentials` não é usado.
+- `CORS_ORIGINS` (lista separada por vírgulas) restringe quais sites podem chamar a API **pelo navegador**. Vazio significa qualquer origem — necessário para que qualquer site exiba animais e eventos públicos.
+- O header `X-Request-Id` é exposto às páginas.
+
+<Callout type="warning" title="CORS não é autenticação nem autorização">
+CORS só orienta navegadores. Qualquer servidor, script ou ferramenta (cURL, Postman) ignora CORS. Quem protege os dados são o token, as roles e as validações da API.
+</Callout>
+
+## Erro de CORS no seu site
+
+1. Confirme que a URL e o método estão corretos (um `404` sem headers CORS aparece como erro de CORS).
+2. Se a API estiver configurada com `CORS_ORIGINS`, peça a inclusão da sua origem — ou faça a chamada pelo seu backend.
+3. Nunca use proxies públicos de "CORS anywhere" com tokens.

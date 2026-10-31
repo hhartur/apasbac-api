@@ -1,0 +1,65 @@
+---
+title: Primeiros passos
+description: Faça uma consulta pública, autentique um usuário e chame um endpoint protegido.
+---
+
+<Steps>
+<Step title="Faça uma consulta pública">
+
+A lista de animais é pública: não precisa de cadastro nem de token.
+
+<CodeGroup titles="cURL,JavaScript,Python">
+
+```bash
+curl "https://apasbac-api.vercel.app/api/v1/animals?isAdopted=false&limit=3"
+```
+
+```javascript
+const res = await fetch('https://apasbac-api.vercel.app/api/v1/animals?isAdopted=false&limit=3');
+const body = await res.json();
+console.log(body.data.data); // lista de animais
+```
+
+```python
+import requests
+r = requests.get("https://apasbac-api.vercel.app/api/v1/animals",
+                 params={"isAdopted": "false", "limit": 3}, timeout=15)
+print(r.json()["data"]["data"])
+```
+
+</CodeGroup>
+
+Toda resposta de sucesso vem em `{ success, data, timestamp }`. Em listas paginadas, `data` contém `data`, `total`, `page`, `limit` e `totalPages`.
+
+</Step>
+<Step title="Faça login">
+
+Use uma conta existente (ou crie uma em [Cadastro](/docs/autenticacao/cadastro)).
+
+```bash
+curl -X POST "https://apasbac-api.vercel.app/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"usuario@exemplo.com","password":"SENHA_DO_USUARIO"}'
+```
+
+A resposta traz `data.user`, `data.accessToken` (válido por 15 minutos) e `data.refreshToken` (7 dias, uso único).
+
+</Step>
+<Step title="Chame um endpoint protegido">
+
+```bash
+curl "https://apasbac-api.vercel.app/api/v1/users/me" \
+  -H "Authorization: Bearer $APASBAC_ACCESS_TOKEN"
+```
+
+</Step>
+<Step title="Renove a sessão antes de expirar">
+
+Quando receber `401`, troque o refresh token por um novo par em [`POST /auth/refresh`](/docs/autenticacao/renovacao) e repita a requisição uma vez.
+
+</Step>
+</Steps>
+
+<Callout type="security">
+Nunca coloque senhas ou tokens no código-fonte, em URLs ou em logs. Em sites, guarde a sessão no servidor (veja [Segurança de credenciais](/docs/autenticacao/credenciais)).
+</Callout>

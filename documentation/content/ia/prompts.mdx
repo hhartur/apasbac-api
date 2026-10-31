@@ -1,0 +1,85 @@
+---
+title: Exemplos de prompts
+description: Prompts prontos para pedir integrações a qualquer agente de IA.
+---
+
+Todos os prompts mandam o agente consultar os contratos oficiais antes de implementar. Troque `DOCS` pela URL desta documentação.
+
+### Integrar login da APASBAC
+
+```text
+Leia DOCS/AGENTS.md e DOCS/llms-full.txt. Implemente login com a APASBAC API neste projeto, seguindo a arquitetura existente.
+Use POST /api/v1/auth/login, guarde os tokens com segurança adequada a esta stack, implemente renovação serializada com
+POST /api/v1/auth/refresh (substituindo os dois tokens) e logout. Trate 400, 401 e 429. Não invente campos. Escreva testes.
+```
+
+### Criar página de animais
+
+```text
+Consulte DOCS/openapi.json. Crie uma página que lista animais disponíveis (GET /api/v1/animals?isAdopted=false) com
+paginação, fotos com alt, estados de carregamento, vazio e erro. Use os componentes e o cliente HTTP já existentes no projeto.
+```
+
+### Exibir informações públicas de um animal
+
+```text
+Usando DOCS/llms-full.txt, crie a página de detalhe de um animal com GET /api/v1/animals/public/{id}. A resposta não tem
+contatos. Exiba nome, raça, sexo, porte, temperamento, vacinas e fotos. Trate 404.
+```
+
+### Implementar consulta por QR Code
+
+```text
+Leia DOCS/docs/referencia/qr-codes. Crie a rota /animals/[uuid] que chama GET /api/v1/animals/public/uuid/{uuid} e mostra
+o animal e, se existirem, os contatos da APASBAC e do tutor. Não exiba campos vazios. Adicione noindex. Não registre nem
+armazene os contatos.
+```
+
+### Implementar monitoramentos
+
+```text
+Consulte DOCS/openapi.json (tag Monitor) e DOCS/docs/seguranca/upload-seguro. Para usuários TUTOR, liste
+GET /api/v1/monitoring/mine e permita enviar um monitoramento PENDING: obter assinatura em POST /api/v1/storage/signed-upload
+(pastas monitoring/images e monitoring/videos), enviar os arquivos ao Cloudinary sem o header Authorization da APASBAC e
+chamar POST /api/v1/monitoring/{id}/submit com as URLs. Trate 403 e 400.
+```
+
+### Exibir eventos da APASBAC
+
+```text
+Leia DOCS/docs/eventos/integracao-em-sites e implemente a agenda de eventos com GET /api/v1/events?when=upcoming,
+filtro por categoria (GET /api/v1/events/categories), página por slug, eventos cancelados destacados, datas no campo
+timezone, estados vazio e erro e cache de 5 minutos.
+```
+
+### Criar painel administrativo
+
+```text
+Leia DOCS/AGENTS.md e DOCS/docs/seguranca/autorizacao. Crie um painel para STAFF/ADMIN usando apenas endpoints com x-roles
+compatíveis. Verifique a role em GET /api/v1/users/me, esconda ações sem permissão e trate 403. Tokens só no servidor.
+Peça confirmação antes de exclusões.
+```
+
+### Implementar autenticação com JWT
+
+```text
+Implemente um cliente HTTP para a APASBAC API com access token no header Authorization, renovação automática única
+em caso de 401 (fila para requisições concorrentes), logout que chama POST /api/v1/auth/logout e testes para 401, renovação
+falha e reuso de token. Siga DOCS/docs/autenticacao/refresh-token.
+```
+
+### Integrar upload de imagens
+
+```text
+Consulte DOCS/docs/seguranca/upload-seguro. Para a capa de um evento (STAFF/ADMIN), envie multipart para
+POST /api/v1/events/{id}/image no campo "image" (JPEG, PNG ou WebP até 8 MB). Valide tipo e tamanho no cliente antes de
+enviar, mostre progresso e trate 400 e 413.
+```
+
+### Criar uma página institucional conectada à API
+
+```text
+Leia DOCS/llms.txt. Crie uma página institucional da APASBAC com: animais para adoção (GET /api/v1/animals?isAdopted=false&limit=6)
+e próximos eventos (GET /api/v1/events?when=upcoming&limit=3). Somente endpoints públicos, sem tokens. Não exiba o endereço
+da associação. Textos renderizados com escape.
+```

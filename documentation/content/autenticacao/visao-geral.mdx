@@ -1,0 +1,35 @@
+---
+title: Visão geral da autenticação
+description: JWT com access token de curta duração e refresh token rotativo de uso único.
+---
+
+A API usa dois tokens JWT:
+
+| Token | Validade padrão | Uso | Onde guardar |
+| --- | --- | --- | --- |
+| `accessToken` | 15 minutos | Header `Authorization: Bearer` em cada requisição | Memória (ou servidor) |
+| `refreshToken` | 7 dias | Somente em `POST /auth/refresh` e `POST /auth/logout` | Armazenamento seguro / servidor |
+
+## Fluxo
+
+<Steps>
+<Step title="Login ou cadastro">
+<Endpoint method="POST" path="/auth/login" /> ou <Endpoint method="POST" path="/auth/register" /> devolvem `user`, `accessToken` e `refreshToken`. Cada login inicia uma **sessão** nova.
+</Step>
+<Step title="Requisições autenticadas">
+Envie `Authorization: Bearer` seguido do access token. A API recarrega o usuário do banco a cada requisição.
+</Step>
+<Step title="Renovação">
+Ao receber `401`, chame <Endpoint method="POST" path="/auth/refresh" />. Você recebe um **novo par**; o refresh token antigo deixa de valer.
+</Step>
+<Step title="Logout">
+<Endpoint method="POST" path="/auth/logout" /> encerra a sessão (ou todas, sem enviar refresh token).
+</Step>
+</Steps>
+
+## Garantias de segurança
+
+- Refresh tokens são guardados no banco apenas como hash SHA-256.
+- Cada refresh token pertence a uma família (sessão). Reutilizar um token já trocado, depois de 10 segundos, revoga a sessão inteira e gera o evento de auditoria `AUTH_REFRESH_REUSE_DETECTED`.
+- Redefinir a senha encerra todas as sessões.
+- Tentativas de login, logins, renovações e logouts são auditados, sem senhas ou tokens.

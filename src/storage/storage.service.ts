@@ -1,7 +1,19 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { Readable } from 'stream';
 import { GenerateUploadSignatureDto } from './dto/generate-upload-signature.dto';
+
+const IMAGE_FORMATS = 'jpg,jpeg,png,webp,heic,heif';
+const VIDEO_FORMATS = 'mp4,mov,webm,3gp,m4v';
+
+/** Folders each role may sign uploads for, with the accepted resource types. Anything else is refused. */
+export const UPLOAD_POLICY: Record<string, { roles: string[]; resourceTypes: string[] }> = {
+  'monitoring/images': { roles: ['ADMIN', 'STAFF', 'TUTOR', 'USER'], resourceTypes: ['image'] },
+  'monitoring/videos': { roles: ['ADMIN', 'STAFF', 'TUTOR', 'USER'], resourceTypes: ['video'] },
+  'animals/photos': { roles: ['ADMIN', 'STAFF'], resourceTypes: ['image', 'auto'] },
+  'events/covers': { roles: ['ADMIN', 'STAFF'], resourceTypes: ['image', 'auto'] },
+  'events/gallery': { roles: ['ADMIN', 'STAFF'], resourceTypes: ['image', 'auto'] },
+};
 
 @Injectable()
 export class StorageService {
@@ -15,12 +27,15 @@ export class StorageService {
     });
   }
 
-  async upload(file: Express.Multer.File, folder: string): Promise<string> {
+  async upload(file: Express.Multer.File, folder: string, image = false): Promise<string> {
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           folder,
-          resource_type: 'auto',
+          resource_type: image ? 'image' : 'auto',
+          // Images: Cloudinary re-validates the format and stores a size-limited, recompressed original.
+          ...(image ? { allowed_formats: IMAGE_FORMATS.split(','),
+            transformation: [{ width: 2000, height: 2000, crop: 'limit', quality: 'auto' }] } : {}),
         },
         (error, result: UploadApiResponse) => {
           if (error) return reject(error);
@@ -32,8 +47,18 @@ export class StorageService {
     });
   }
 
-  async uploadMany(files: Express.Multer.File[], folder: string): Promise<string[]> {
-    return Promise.all(files.map((f) => this.upload(f, folder)));
+  async uploadMany(files: Express.Multer.File[], folder: string, image = false): Promise<string[]> {
+    return Promise.all(files.map((f) => this.upload(f, folder, image)));
+  }
+
+  /** True when the URL points to this API's Cloudinary account (or Cloudinary is not configured, e.g. tests). */
+  isOwnedUrl(url: string): boolean {
+    const cloud = process.env.CLOUDINARY_CLOUD_NAME;
+    if (!cloud) return true;
+    try {
+      const u = new URL(url);
+      return u.protocol === 'https:' && u.hostname === 'res.cloudinary.com' && u.pathname.startsWith(`/${cloud}/`);
+    } catch { return false; }
   }
 
   async deleteMany(urls: string[]): Promise<void> {
@@ -49,7 +74,25 @@ export class StorageService {
     }
   }
 
-  generateSignedUploadPayload(dto: GenerateUploadSignatureDto) {
+  /** Enforces UPLOAD_POLICY; non-staff callers also cannot choose names, overwrite files or request transformations. */
+  assertUploadAllowed(dto: GenerateUploadSignatureDto, role: string) {
+    const policy = dto.folder ? UPLOAD_POLICY[dto.folder] : undefined;
+    const resourceType = (dto.resource_type || 'auto').toLowerCase();
+    if (!policy || !policy.roles.includes(role)) {
+      throw new ForbiddenException(`Pasta de upload não permitida para o seu perfil. Pastas aceitas: ${
+        Object.keys(UPLOAD_POLICY).filter((f) => UPLOAD_POLICY[f].roles.includes(role)).join(', ')}`);
+    }
+    if (!policy.resourceTypes.includes(resourceType)) {
+      throw new ForbiddenException(`resource_type '${resourceType}' não permitido para ${dto.folder}`);
+    }
+    const staff = role === 'ADMIN' || role === 'STAFF';
+    if (!staff && (dto.public_id || dto.overwrite || dto.upload_preset || dto.eager?.length)) {
+      throw new ForbiddenException('public_id, overwrite, upload_preset e eager são restritos à equipe');
+    }
+  }
+
+  generateSignedUploadPayload(dto: GenerateUploadSignatureDto, role: string) {
+    this.assertUploadAllowed(dto, role);
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
     const apiKey = process.env.CLOUDINARY_API_KEY;
     const apiSecret = process.env.CLOUDINARY_API_SECRET;
@@ -77,9 +120,11 @@ export class StorageService {
     if (dto.eager?.length) paramsToSign.eager = dto.eager.join('|');
     if (dto.upload_preset) paramsToSign.upload_preset = dto.upload_preset;
     if (typeof dto.overwrite === 'boolean') paramsToSign.overwrite = dto.overwrite;
+    const resourceType = (dto.resource_type || 'auto').toLowerCase();
+    // Signed, so the client cannot remove it: Cloudinary rejects files whose detected format is not listed.
+    paramsToSign.allowed_formats = dto.folder?.endsWith('videos') ? VIDEO_FORMATS : IMAGE_FORMATS;
 
     const signature = cloudinary.utils.api_sign_request(paramsToSign, apiSecret);
-    const resourceType = (dto.resource_type || 'auto').toLowerCase();
 
     return {
       signature,

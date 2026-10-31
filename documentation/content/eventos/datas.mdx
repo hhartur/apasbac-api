@@ -1,0 +1,18 @@
+---
+title: Datas e horários de eventos
+description: startsAt, endsAt e timezone.
+---
+
+- `startsAt` (obrigatório) e `endsAt` (opcional, igual ou posterior ao início) são instantes em UTC.
+- `timezone` (padrão `America/Sao_Paulo`) é o fuso para **exibição**.
+- Eventos de dia inteiro: use `startsAt` no início do dia local e `endsAt` no fim.
+
+```javascript
+function periodo(e) {
+  const d = (iso, opts) => new Intl.DateTimeFormat('pt-BR', { timeZone: e.timezone, ...opts }).format(new Date(iso));
+  const dia = d(e.startsAt, { weekday: 'long', day: 'numeric', month: 'long' });
+  const ini = d(e.startsAt, { hour: '2-digit', minute: '2-digit' });
+  const fim = e.endsAt ? d(e.endsAt, { hour: '2-digit', minute: '2-digit' }) : null;
+  return fim ? `${dia}, das ${ini} às ${fim}` : `${dia}, às ${ini}`;
+}
+```

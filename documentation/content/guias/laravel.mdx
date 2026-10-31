@@ -1,0 +1,50 @@
+---
+title: Integração com Laravel
+description: Serviço com o cliente HTTP do Laravel, cache e sessão no servidor.
+---
+
+```php
+// config/services.php
+'apasbac' => ['url' => env('APASBAC_API_URL', 'https://apasbac-api.vercel.app/api/v1')],
+```
+
+```php
+// app/Services/Apasbac.php
+namespace App\Services;
+
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Support\Facades\{Cache, Http};
+
+class Apasbac
+{
+    private function http(): PendingRequest
+    {
+        return Http::baseUrl(config('services.apasbac.url'))->acceptJson()->timeout(15)->retry(2, 300, throw: false);
+    }
+
+    public function upcomingEvents(): array
+    {
+        return Cache::remember('apasbac.events.upcoming', 300, fn () =>
+            $this->http()->get('/events', ['when' => 'upcoming', 'limit' => 12])->throw()->json('data.data'));
+    }
+
+    public function login(string $email, string $password): array
+    {
+        $data = $this->http()->post('/auth/login', compact('email', 'password'))->throw()->json('data');
+        session(['apasbac.at' => $data['accessToken'], 'apasbac.rt' => $data['refreshToken']]);
+        return $data['user'];
+    }
+
+    public function authed(string $method, string $path, array $payload = []): array
+    {
+        $res = $this->http()->withToken(session('apasbac.at'))->send($method, $path, ['json' => $payload]);
+        if ($res->status() === 401 && session('apasbac.rt')) {
+            $r = $this->http()->post('/auth/refresh', ['refreshToken' => session('apasbac.rt')]);
+            if ($r->failed()) { session()->forget('apasbac'); abort(401); }
+            session(['apasbac.at' => $r->json('data.accessToken'), 'apasbac.rt' => $r->json('data.refreshToken')]);
+            $res = $this->http()->withToken(session('apasbac.at'))->send($method, $path, ['json' => $payload]);
+        }
+        return $res->throw()->json('data');
+    }
+}
+```

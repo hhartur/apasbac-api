@@ -1,0 +1,22 @@
+---
+title: Regras de segurança para agentes
+description: O que um agente de IA nunca deve fazer ao integrar a APASBAC API.
+---
+
+<Callout type="security" title="Regras não negociáveis">
+1. Nunca coloque senhas, tokens ou segredos em código, commits, logs, prompts ou mensagens.
+2. Nunca use credenciais de ADMIN/STAFF em código que roda no navegador ou em apps distribuídos.
+3. Nunca tente contornar `401`, `403` ou `429` (trocar IP, forjar tokens, testar IDs alheios).
+4. Nunca invente endpoints ou campos para "fazer funcionar".
+5. Nunca exiba ou armazene dados de tutores além da página de QR Code.
+6. Nunca desative validações do cliente para enviar dados que a API recusou.
+7. Nunca use proxies públicos ou serviços de terceiros que recebam tokens da APASBAC.
+8. Nunca execute operações destrutivas (DELETE, revisão de monitoramentos, mudança de role) sem confirmação explícita do usuário humano.
+</Callout>
+
+## Quando parar e perguntar
+
+- O usuário pede uma funcionalidade sem endpoint correspondente.
+- A implementação exigiria guardar credenciais de equipe no frontend.
+- Testes precisariam rodar contra produção com dados reais.
+- O contrato do OpenAPI parece contradizer a documentação (informe a divergência).

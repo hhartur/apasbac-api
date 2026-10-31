@@ -1,0 +1,22 @@
+---
+title: Integração em sites
+description: Checklist para exibir eventos da APASBAC em qualquer site institucional.
+---
+
+Nenhum acesso ao painel administrativo é necessário: todos os dados vêm de endpoints públicos.
+
+## Checklist
+
+- [ ] Listagem com `when=upcoming` e paginação.
+- [ ] Filtro por categoria a partir de `GET /events/categories`.
+- [ ] Página do evento por slug.
+- [ ] Capa com `alt` e placeholder.
+- [ ] Data no fuso `timezone`.
+- [ ] Local e link de mapa quando houver coordenadas.
+- [ ] Destaque de **cancelado** com `cancellationReason`.
+- [ ] Estado vazio ("Nenhum evento programado").
+- [ ] Estado de erro com opção de tentar de novo.
+- [ ] Textos renderizados com escape (não use HTML vindo da API).
+- [ ] Cache de alguns minutos (eventos mudam pouco).
+
+Veja os [exemplos completos](/docs/eventos/exemplos).

@@ -6,6 +6,9 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums';
+import { Audited } from '../audit/audit.interceptor';
+import { ApiEnvelope } from '../common/swagger';
+import { ConfigResponse, MessageResponse } from '../common/dto/responses';
 
 @ApiTags('Config')
 @ApiBearerAuth('access-token')
@@ -16,23 +19,31 @@ export class ConfigAppController {
   constructor(private configService: ConfigAppService) {}
 
   @Post()
+  @Audited({ action: 'CONFIG_CREATE', resource: 'config', idParam: 'key' })
   @ApiOperation({ summary: 'Cria nova configuração (Admin/Staff)' })
+  @ApiEnvelope(ConfigResponse, { status: 201 })
   create(@Body() dto: CreateConfigDto) { return this.configService.create(dto); }
 
   @Get()
   @ApiOperation({ summary: 'Lista todas as configurações (Admin/Staff)' })
+  @ApiEnvelope(ConfigResponse, { isArray: true })
   findAll() { return this.configService.findAll(); }
 
   @Get(':key')
   @ApiOperation({ summary: 'Busca configuração por chave (Admin/Staff)' })
+  @ApiEnvelope(ConfigResponse)
   findOne(@Param('key') key: string) { return this.configService.findOne(key); }
 
   @Patch(':key')
-  @ApiOperation({ summary: 'Edita configuração (Admin/Staff)' })
+  @Audited({ action: 'CONFIG_UPDATE', resource: 'config', idParam: 'key' })
+  @ApiOperation({ summary: 'Edita configuração (Admin/Staff)', description: 'Chaves usadas pela API: monitoring_period_value, monitoring_period_unit, apasbac_phone, apasbac_email.' })
+  @ApiEnvelope(ConfigResponse)
   update(@Param('key') key: string, @Body() dto: UpdateConfigDto) { return this.configService.update(key, dto); }
 
   @Delete(':key')
   @Roles(Role.ADMIN)
+  @Audited({ action: 'CONFIG_DELETE', resource: 'config', idParam: 'key' })
   @ApiOperation({ summary: 'Remove configuração (Admin)' })
+  @ApiEnvelope(MessageResponse)
   remove(@Param('key') key: string) { return this.configService.remove(key); }
 }

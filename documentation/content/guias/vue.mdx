@@ -1,0 +1,51 @@
+---
+title: Integração com Vue
+description: Composable de dados e store de sessão em memória.
+---
+
+```typescript
+// composables/useApasbac.ts
+import { ref, watchEffect, type Ref } from 'vue';
+
+const API = import.meta.env.VITE_APASBAC_API_URL ?? 'https://apasbac-api.vercel.app/api/v1';
+
+export function useApasbac<T>(path: Ref<string> | string) {
+  const data = ref<T>();
+  const error = ref<string>();
+  const loading = ref(true);
+  watchEffect(async (onCleanup) => {
+    const ctrl = new AbortController();
+    onCleanup(() => ctrl.abort());
+    loading.value = true; error.value = undefined;
+    try {
+      const res = await fetch(`${API}${typeof path === 'string' ? path : path.value}`, { signal: ctrl.signal });
+      const body = await res.json();
+      if (!res.ok) throw new Error([body.message].flat().join('; '));
+      data.value = body.data;
+    } catch (e) {
+      if ((e as Error).name !== 'AbortError') error.value = (e as Error).message;
+    } finally { loading.value = false; }
+  });
+  return { data, error, loading };
+}
+```
+
+```vue
+<script setup lang="ts">
+import { useApasbac } from '@/composables/useApasbac';
+const { data, error, loading } = useApasbac<{ data: { id: number; name: string; photos: string[] }[] }>('/animals?isAdopted=false');
+</script>
+
+<template>
+  <p v-if="loading">Carregando…</p>
+  <p v-else-if="error" role="alert">Não foi possível carregar.</p>
+  <ul v-else>
+    <li v-for="a in data?.data" :key="a.id">
+      <img v-if="a.photos[0]" :src="a.photos[0]" :alt="`Foto de ${a.name}`" loading="lazy" />
+      {{ a.name }}
+    </li>
+  </ul>
+</template>
+```
+
+`VITE_APASBAC_API_URL` é pública (vai para o navegador): coloque nela apenas a URL, nunca credenciais.

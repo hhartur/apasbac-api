@@ -1,0 +1,46 @@
+---
+title: Tratamento de erros
+description: Como interpretar e tratar erros da API em qualquer linguagem.
+---
+
+Todas as falhas usam o mesmo formato, descrito em [Estrutura das respostas](/docs/fundamentos/respostas#erro). Trate pelo `statusCode`, não pelo texto de `message`.
+
+## Estratégia recomendada
+
+| Status | Ação |
+| --- | --- |
+| `400` | Mostre as mensagens de validação ao usuário. Não repita. |
+| `401` | Tente `POST /auth/refresh` **uma vez** e repita a requisição. Se falhar, peça login. |
+| `403` | Informe que o usuário não tem permissão. Não repita. |
+| `404` | Mostre "não encontrado". |
+| `409` | Explique o conflito (dado duplicado ou vinculado). |
+| `413` | Reduza o arquivo (máx. 8 MB por imagem). |
+| `429` | Aguarde `Retry-After` segundos antes de tentar de novo. |
+| `5xx` | Repita com espera exponencial (no máximo 3 vezes) e registre o `requestId`. |
+
+## Exemplo em TypeScript
+
+```typescript
+export class ApiError extends Error {
+  constructor(public status: number, message: string, public requestId?: string) { super(message); }
+}
+
+export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const res = await fetch(`https://apasbac-api.vercel.app/api/v1${path}`, {
+    ...init,
+    headers: { 'Content-Type': 'application/json', ...init.headers },
+    signal: init.signal ?? AbortSignal.timeout(15000),
+  });
+  if (res.status === 204) return undefined as T;
+  const body = await res.json();
+  if (!res.ok) {
+    const message = Array.isArray(body.message) ? body.message.join('; ') : body.message;
+    throw new ApiError(res.status, message, body.requestId);
+  }
+  return body.data as T;
+}
+```
+
+<Callout type="tip" title="Suporte">
+Ao reportar um problema, envie o `requestId` (também no header `X-Request-Id`). Ele permite localizar a requisição nos logs e na auditoria sem expor dados pessoais.
+</Callout>

@@ -1,0 +1,241 @@
+---
+title: Exemplos de implementação
+description: Listas de eventos completas em React, Next.js, Vue, HTML/JavaScript e Flutter.
+---
+
+Todos os exemplos cobrem: listagem, paginação, filtro por categoria, imagem, data no fuso correto, local, eventos cancelados, estado vazio e erro.
+
+## React
+
+```tsx
+import { useEffect, useState } from 'react';
+
+const API = 'https://apasbac-api.vercel.app/api/v1';
+type Ev = { id: number; slug: string; title: string; summary: string | null; coverImageUrl: string | null; status: string;
+  startsAt: string; timezone: string; city: string | null; state: string | null; cancellationReason: string | null;
+  category: { name: string; slug: string } };
+
+const quando = (e: Ev) => new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long', timeStyle: 'short', timeZone: e.timezone }).format(new Date(e.startsAt));
+
+export function Eventos() {
+  const [cats, setCats] = useState<{ name: string; slug: string }[]>([]);
+  const [cat, setCat] = useState('');
+  const [page, setPage] = useState(1);
+  const [state, setState] = useState<{ items: Ev[]; pages: number; loading: boolean; error?: string }>({ items: [], pages: 1, loading: true });
+
+  useEffect(() => { fetch(`${API}/events/categories`).then((r) => r.json()).then((b) => setCats(b.data)).catch(() => {}); }, []);
+  useEffect(() => {
+    const q = new URLSearchParams({ when: 'upcoming', limit: '9', page: String(page), ...(cat && { category: cat }) });
+    setState((s) => ({ ...s, loading: true, error: undefined }));
+    fetch(`${API}/events?${q}`)
+      .then(async (r) => { const b = await r.json(); if (!r.ok) throw new Error(b.message); return b.data; })
+      .then((d) => setState({ items: d.data, pages: d.totalPages || 1, loading: false }))
+      .catch(() => setState({ items: [], pages: 1, loading: false, error: 'Não foi possível carregar os eventos.' }));
+  }, [cat, page]);
+
+  return (
+    <section aria-labelledby="ev-titulo">
+      <h2 id="ev-titulo">Próximos eventos</h2>
+      <label>Categoria{' '}
+        <select value={cat} onChange={(e) => { setCat(e.target.value); setPage(1); }}>
+          <option value="">Todas</option>
+          {cats.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+        </select>
+      </label>
+      {state.loading && <p aria-busy="true">Carregando…</p>}
+      {state.error && <p role="alert">{state.error}</p>}
+      {!state.loading && !state.error && state.items.length === 0 && <p>Nenhum evento programado.</p>}
+      <ul>
+        {state.items.map((e) => (
+          <li key={e.id}>
+            {e.coverImageUrl ? <img src={e.coverImageUrl} alt="" loading="lazy" /> : <div aria-hidden className="placeholder" />}
+            <p>{e.category.name}</p>
+            <h3><a href={`/eventos/${e.slug}`}>{e.title}</a></h3>
+            {e.status === 'CANCELLED' && <p><strong>Cancelado</strong>{e.cancellationReason && `: ${e.cancellationReason}`}</p>}
+            <p><time dateTime={e.startsAt}>{quando(e)}</time>{e.city && ` · ${e.city}${e.state ? ` - ${e.state}` : ''}`}</p>
+            {e.summary && <p>{e.summary}</p>}
+          </li>
+        ))}
+      </ul>
+      <nav aria-label="Paginação">
+        <button disabled={page <= 1} onClick={() => setPage(page - 1)}>Anterior</button>
+        <span>{page} de {state.pages}</span>
+        <button disabled={page >= state.pages} onClick={() => setPage(page + 1)}>Próxima</button>
+      </nav>
+    </section>
+  );
+}
+```
+
+## Next.js
+
+```tsx
+// app/eventos/page.tsx — Server Component, sem JavaScript no cliente
+const API = process.env.APASBAC_API_URL ?? 'https://apasbac-api.vercel.app/api/v1';
+
+export default async function Page({ searchParams }: { searchParams: Promise<{ page?: string; categoria?: string }> }) {
+  const sp = await searchParams;
+  const q = new URLSearchParams({ when: 'upcoming', limit: '9', page: sp.page ?? '1', ...(sp.categoria && { category: sp.categoria }) });
+  const res = await fetch(`${API}/events?${q}`, { next: { revalidate: 300 } });
+  if (!res.ok) return <p role="alert">Não foi possível carregar os eventos.</p>;
+  const { data } = await res.json();
+  if (!data.data.length) return <p>Nenhum evento programado.</p>;
+  return (
+    <ul>
+      {data.data.map((e: any) => (
+        <li key={e.id}>
+          <a href={`/eventos/${e.slug}`}>{e.title}</a>{' '}
+          {e.status === 'CANCELLED' && <strong>(cancelado)</strong>}{' '}
+          <time dateTime={e.startsAt}>{new Date(e.startsAt).toLocaleString('pt-BR', { timeZone: e.timezone })}</time>
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+```tsx
+// app/eventos/[slug]/page.tsx
+import { notFound } from 'next/navigation';
+
+export default async function Evento({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const res = await fetch(`${process.env.APASBAC_API_URL}/events/slug/${encodeURIComponent(slug)}`, { next: { revalidate: 300 } });
+  if (res.status === 404) notFound();
+  const { data: e } = await res.json();
+  return (
+    <article>
+      {e.coverImageUrl && <img src={e.coverImageUrl} alt="" />}
+      <h1>{e.title}</h1>
+      {e.status === 'CANCELLED' && <p role="status">Evento cancelado. {e.cancellationReason}</p>}
+      <p style={{ whiteSpace: 'pre-line' }}>{e.description}</p>
+    </article>
+  );
+}
+```
+
+## Vue
+
+```vue
+<script setup lang="ts">
+import { ref, watchEffect } from 'vue';
+const API = 'https://apasbac-api.vercel.app/api/v1';
+const page = ref(1);
+const items = ref<any[]>([]);
+const pages = ref(1);
+const loading = ref(true);
+const error = ref('');
+
+watchEffect(async () => {
+  loading.value = true; error.value = '';
+  try {
+    const r = await fetch(`${API}/events?when=upcoming&limit=9&page=${page.value}`);
+    const b = await r.json();
+    if (!r.ok) throw new Error(b.message);
+    items.value = b.data.data; pages.value = b.data.totalPages || 1;
+  } catch { error.value = 'Não foi possível carregar os eventos.'; }
+  finally { loading.value = false; }
+});
+const quando = (e: any) => new Date(e.startsAt).toLocaleString('pt-BR', { timeZone: e.timezone, dateStyle: 'long', timeStyle: 'short' });
+</script>
+
+<template>
+  <p v-if="loading">Carregando…</p>
+  <p v-else-if="error" role="alert">{{ error }}</p>
+  <p v-else-if="!items.length">Nenhum evento programado.</p>
+  <ul v-else>
+    <li v-for="e in items" :key="e.id">
+      <img v-if="e.coverImageUrl" :src="e.coverImageUrl" alt="" loading="lazy" />
+      <h3>{{ e.title }}</h3>
+      <p v-if="e.status === 'CANCELLED'"><strong>Cancelado</strong> {{ e.cancellationReason }}</p>
+      <time :datetime="e.startsAt">{{ quando(e) }}</time>
+    </li>
+  </ul>
+  <button :disabled="page <= 1" @click="page--">Anterior</button>
+  <button :disabled="page >= pages" @click="page++">Próxima</button>
+</template>
+```
+
+## HTML e JavaScript
+
+```html
+<div id="eventos" aria-live="polite">Carregando…</div>
+<script type="module">
+  const API = 'https://apasbac-api.vercel.app/api/v1';
+  const box = document.getElementById('eventos');
+  const el = (tag, text) => Object.assign(document.createElement(tag), text ? { textContent: text } : {});
+  try {
+    const r = await fetch(`${API}/events?when=upcoming&limit=6`);
+    if (!r.ok) throw new Error();
+    const { data } = await r.json();
+    box.textContent = '';
+    if (!data.data.length) box.append(el('p', 'Nenhum evento programado.'));
+    for (const e of data.data) {
+      const card = el('article');
+      if (e.coverImageUrl) card.append(Object.assign(el('img'), { src: e.coverImageUrl, alt: '', loading: 'lazy' }));
+      card.append(el('h3', e.title));
+      if (e.status === 'CANCELLED') card.append(el('p', `Cancelado${e.cancellationReason ? ': ' + e.cancellationReason : ''}`));
+      card.append(el('p', new Date(e.startsAt).toLocaleString('pt-BR', { timeZone: e.timezone })));
+      if (e.city) card.append(el('p', [e.locationName, e.city, e.state].filter(Boolean).join(' · ')));
+      box.append(card);
+    }
+  } catch {
+    box.textContent = 'Não foi possível carregar os eventos.';
+  }
+</script>
+```
+
+## Flutter
+
+```dart
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+class EventosPage extends StatefulWidget {
+  const EventosPage({super.key});
+  @override
+  State<EventosPage> createState() => _EventosPageState();
+}
+
+class _EventosPageState extends State<EventosPage> {
+  late Future<List<dynamic>> _future = _load();
+
+  Future<List<dynamic>> _load() async {
+    final r = await http
+        .get(Uri.parse('https://apasbac-api.vercel.app/api/v1/events?when=upcoming&limit=20'))
+        .timeout(const Duration(seconds: 15));
+    if (r.statusCode != 200) throw Exception('HTTP ${r.statusCode}');
+    return jsonDecode(r.body)['data']['data'] as List<dynamic>;
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<List<dynamic>>(
+        future: _future,
+        builder: (context, snap) {
+          if (snap.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
+          if (snap.hasError) {
+            return Center(child: TextButton(onPressed: () => setState(() => _future = _load()), child: const Text('Erro ao carregar. Tentar de novo')));
+          }
+          final items = snap.data!;
+          if (items.isEmpty) return const Center(child: Text('Nenhum evento programado.'));
+          return ListView.builder(
+            itemCount: items.length,
+            itemBuilder: (_, i) {
+              final e = items[i];
+              final start = DateTime.parse(e['startsAt']).toLocal();
+              return ListTile(
+                leading: e['coverImageUrl'] != null ? Image.network(e['coverImageUrl'], width: 56, fit: BoxFit.cover) : const Icon(Icons.event),
+                title: Text(e['title']),
+                subtitle: Text([
+                  if (e['status'] == 'CANCELLED') 'Cancelado',
+                  '${start.day}/${start.month} ${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}',
+                  if (e['city'] != null) e['city'],
+                ].join(' · ')),
+              );
+            },
+          );
+        },
+      );
+}
+```

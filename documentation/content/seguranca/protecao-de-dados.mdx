@@ -1,0 +1,27 @@
+---
+title: Proteção de dados
+description: Quais dados cada endpoint expõe e o que nunca sai da API.
+---
+
+## Nunca retornado
+
+- Hash de senha (removido de todas as respostas de usuário).
+- Refresh tokens armazenados e tokens de redefinição (só existem como hash).
+- Endereço físico da APASBAC.
+- `createdById` dos eventos nas rotas públicas.
+
+## Retornado somente a quem precisa
+
+| Dado | Quem recebe |
+| --- | --- |
+| CPF, telefone e e-mail de usuários | O próprio usuário; ADMIN e STAFF |
+| Contato do tutor | Público, apenas pelo QR Code de um animal adotado |
+| `uuid` do animal e `qrCodeUrl` | ADMIN, STAFF e o tutor do animal |
+| Mídias de monitoramento | Dono do monitoramento, ADMIN e STAFF — e apagadas após a revisão |
+| Auditoria | ADMIN |
+
+## Em trânsito e em repouso
+
+- HTTPS em produção (Vercel), com HSTS enviado pelo helmet.
+- Senhas com bcrypt; tokens sensíveis com SHA-256.
+- Segredos somente em variáveis de ambiente do servidor.

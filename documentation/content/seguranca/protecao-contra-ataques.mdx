@@ -1,0 +1,18 @@
+---
+title: Proteção contra ataques
+description: SQL injection, XSS, CSRF, enumeração, mass assignment e outras ameaças.
+---
+
+| Ameaça | Mitigação na API |
+| --- | --- |
+| SQL injection | Todas as consultas via Prisma com parâmetros; nenhum SQL montado com texto do usuário |
+| XSS | A API devolve JSON (`Content-Type: application/json`, `X-Content-Type-Options: nosniff`). Textos são texto puro: **o cliente deve escapar** ao renderizar |
+| XSS em e-mails | Nomes e observações são escapados nos templates HTML |
+| CSRF | Não se aplica à API (sem cookies). Se o seu site usa cookies, proteja as rotas dele |
+| Mass assignment | DTOs com `whitelist` + `forbidNonWhitelisted`: campos extras retornam 400 |
+| Enumeração de usuários | Login e recuperação de senha com respostas idênticas. O cadastro informa e-mail/CPF repetido; mitigado por 5 tentativas/min |
+| Força bruta | Rate limiting no login e auditoria das falhas |
+| Payloads grandes | JSON até 100 KB; arquivos até 8 MB |
+| Clickjacking / MIME sniffing | Headers do helmet (`X-Frame-Options`, `X-Content-Type-Options`, `Strict-Transport-Security`, entre outros) |
+| Integrações externas lentas | Manifesto do GitHub com timeout de 5 s e limite de 64 KB |
+| Vazamento em erros | Erros 500 respondem mensagem genérica; detalhes só nos logs do servidor |

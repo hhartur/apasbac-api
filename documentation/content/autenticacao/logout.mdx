@@ -1,0 +1,22 @@
+---
+title: Logout
+description: Encerrar uma sessão ou todas as sessões do usuário.
+---
+
+<Endpoint method="POST" path="/auth/logout" /> exige o access token.
+
+| Corpo | Efeito |
+| --- | --- |
+| `{ "refreshToken": "…" }` | Encerra apenas aquela sessão |
+| `{}` | Encerra **todas** as sessões do usuário |
+
+```bash
+curl -X POST "https://apasbac-api.vercel.app/api/v1/auth/logout" \
+  -H "Authorization: Bearer $APASBAC_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"refreshToken":"eyJhbGciOiJIUzI1NiIs…"}'
+```
+
+<Callout type="warning" title="O access token continua válido até expirar">
+JWTs não são consultados em uma lista de bloqueio: após o logout, o access token atual segue aceito por até 15 minutos. Apague-o do cliente imediatamente.
+</Callout>

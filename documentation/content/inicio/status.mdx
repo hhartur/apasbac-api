@@ -1,0 +1,27 @@
+---
+title: Status da API
+description: Como verificar se a API está disponível.
+status: partial
+---
+
+Não existe um endpoint dedicado de saúde (`/health`) nem uma página pública de status. <Status value="not-implemented" />
+
+## Como verificar a disponibilidade
+
+Use um endpoint público e leve, que não depende de serviços externos:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" "https://apasbac-api.vercel.app/api/v1/events/categories"
+```
+
+`200` indica que a API e o banco de dados respondem.
+
+<Callout type="warning" title="Não use /app/version como health check">
+`GET /app/version` depende do GitHub e pode responder `503` mesmo com a API saudável.
+</Callout>
+
+## Boas práticas de monitoramento
+
+- No máximo uma verificação por minuto (o limite global é 100 requisições por minuto por IP).
+- Envie `X-Request-Id: monitor-<data>` para identificar suas requisições.
+- Trate `429` como sinal para espaçar as verificações.

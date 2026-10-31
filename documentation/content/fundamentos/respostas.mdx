@@ -1,0 +1,56 @@
+---
+title: Estrutura das respostas
+description: O envelope de sucesso, listas paginadas e o envelope de erro.
+---
+
+## Sucesso
+
+Toda resposta de sucesso tem o mesmo envelope:
+
+```json
+{
+  "success": true,
+  "data": { "id": 11, "name": "Leão" },
+  "timestamp": "2026-10-31T12:00:00.000Z"
+}
+```
+
+## Listas paginadas
+
+A maioria das listas devolve um objeto de paginação dentro de `data`:
+
+```json
+{
+  "success": true,
+  "data": {
+    "data": [ { "id": 11 }, { "id": 10 } ],
+    "total": 42,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 3
+  },
+  "timestamp": "2026-10-31T12:00:00.000Z"
+}
+```
+
+Exceções, que devolvem uma lista simples em `data`: `GET /monitoring/mine`, `GET /configs` e `GET /events/categories`.
+
+## Erro
+
+```json
+{
+  "success": false,
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": ["email must be an email"],
+  "timestamp": "2026-10-31T12:00:00.000Z",
+  "path": "/api/v1/auth/login",
+  "requestId": "2f1c7a9e-6a43-4f4e-9d0a-1b2c3d4e5f60"
+}
+```
+
+`message` pode ser uma **string** ou uma **lista de strings** (erros de validação). Trate os dois casos.
+
+## Sem corpo
+
+`POST /app/update-events` responde `204 No Content`, sem envelope.

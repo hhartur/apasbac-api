@@ -1,0 +1,14 @@
+---
+title: Expiração de tokens
+description: Prazos padrão e como o cliente deve reagir a cada expiração.
+---
+
+| Item | Prazo padrão | Variável no servidor |
+| --- | --- | --- |
+| Access token | 15 minutos | `JWT_ACCESS_EXPIRES_IN` |
+| Refresh token | 7 dias | `JWT_REFRESH_EXPIRES_IN` |
+| Link de redefinição de senha | 2 horas | fixo |
+| Janela de concorrência no refresh | 10 segundos | fixo |
+
+- O prazo do refresh token **não é estendido** pela rotação além do valor configurado a partir de cada emissão: cada novo refresh token vale 7 dias a partir da renovação. Uma sessão usada ao menos uma vez por semana permanece ativa.
+- Não dependa de horários exatos: o servidor pode mudar os prazos. Reaja ao `401`.

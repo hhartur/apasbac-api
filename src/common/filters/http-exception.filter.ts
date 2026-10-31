@@ -1,5 +1,13 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { Request, Response } from 'express';
+
+// Known Prisma errors become client errors instead of a generic 500.
+const PRISMA_ERRORS: Record<string, [number, string, string]> = {
+  P2025: [HttpStatus.NOT_FOUND, 'Not Found', 'Registro não encontrado'],
+  P2002: [HttpStatus.CONFLICT, 'Conflict', 'Já existe um registro com estes dados únicos'],
+  P2003: [HttpStatus.CONFLICT, 'Conflict', 'O registro está vinculado a outros dados e não pode ser alterado ou removido'],
+};
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -21,7 +29,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
       if (typeof res === 'object') { message = res.message || message; error = res.error || error; }
       else { message = res; }
+    } else if (exception instanceof Prisma.PrismaClientKnownRequestError && PRISMA_ERRORS[exception.code]) {
+      [status, error, message] = PRISMA_ERRORS[exception.code];
     } else { this.logger.error(exception); }
-    response.status(status).json({ success: false, statusCode: status, error, message, ...update, timestamp: new Date().toISOString(), path: request.url });
+    const requestId = (request as any).requestId;
+    response.status(status).json({ success: false, statusCode: status, error, message, ...update,
+      timestamp: new Date().toISOString(), path: request.url, ...(requestId ? { requestId } : {}) });
   }
 }

@@ -1,0 +1,24 @@
+---
+title: Datas e horários
+description: Formato ISO 8601, UTC e fuso de exibição.
+---
+
+- Todas as datas são strings **ISO 8601 em UTC** (`2026-11-21T13:00:00.000Z`).
+- Ao **enviar** datas, inclua o fuso: `2026-11-21T10:00:00-03:00` e `2026-11-21T13:00:00Z` são o mesmo instante.
+- Eventos têm o campo `timezone` (padrão `America/Sao_Paulo`): use-o para exibir o horário local.
+
+```javascript
+const fmt = new Intl.DateTimeFormat('pt-BR', {
+  dateStyle: 'full', timeStyle: 'short', timeZone: event.timezone,
+});
+fmt.format(new Date(event.startsAt)); // "sábado, 21 de novembro de 2026 10:00"
+```
+
+## Campos de data por recurso
+
+| Recurso | Campos |
+| --- | --- |
+| Todos | `createdAt`, `updatedAt` |
+| Monitoramento | `dueDate` (prazo, calculado pelas configs), `submittedAt`, `reviewedAt` |
+| Evento | `startsAt`, `endsAt` (opcional), `publishedAt` (primeira publicação) |
+| Auditoria | `createdAt` |

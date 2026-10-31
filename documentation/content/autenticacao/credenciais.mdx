@@ -1,0 +1,24 @@
+---
+title: Segurança de credenciais
+description: Onde guardar tokens em cada tipo de aplicação e o que nunca fazer.
+---
+
+## Onde guardar
+
+| Aplicação | Recomendado |
+| --- | --- |
+| Site com backend (Next.js, Nuxt, Laravel…) | Tokens no **servidor**; o navegador recebe um cookie de sessão `httpOnly`, `Secure`, `SameSite=Lax` do seu domínio |
+| SPA sem backend | Access token só em memória; aceite que a sessão termina ao recarregar, ou crie um backend |
+| Android/iOS (Flutter, React Native) | Keystore/Keychain (`flutter_secure_storage`, `expo-secure-store`) |
+| Integração servidor a servidor | Variáveis de ambiente ou cofre de segredos |
+
+## Nunca
+
+- Guardar senhas de usuários da APASBAC.
+- Colocar tokens em `localStorage`, URLs, logs, mensagens de erro ou analytics.
+- Embutir credenciais de uma conta ADMIN/STAFF em código público ("conta de serviço" no frontend).
+- Usar variáveis `NEXT_PUBLIC_*`, `VITE_*` ou equivalentes para segredos — elas vão para o navegador.
+
+<Callout type="security">
+Uma página feita só com HTML, CSS e JavaScript não tem onde esconder segredos. Use apenas os endpoints públicos ou adicione um backend.
+</Callout>

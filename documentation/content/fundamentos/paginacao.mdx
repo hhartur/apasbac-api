@@ -1,0 +1,37 @@
+---
+title: Paginação
+description: Parâmetros page e limit, limites por endpoint e como percorrer todas as páginas.
+---
+
+Listas paginadas aceitam `page` (começa em 1) e `limit`.
+
+| Endpoint | `limit` padrão | `limit` máximo |
+| --- | --- | --- |
+| `GET /animals` | 20 | 100 |
+| `GET /users` | 20 | 100 |
+| `GET /monitoring` | 20 | 100 |
+| `GET /monitoring/mine` | 10 | 100 |
+| `GET /events`, `GET /admin/events` | 12 | 50 |
+| `GET /admin/audit-logs` | 50 | 200 |
+
+Em `animals`, `users` e `monitoring`, valores fora da faixa são ajustados para o limite. Em `events` e `audit-logs`, valores fora da faixa retornam `400`.
+
+## Percorrendo todas as páginas
+
+```javascript
+async function fetchAll(url) {
+  const items = [];
+  for (let page = 1; ; page++) {
+    const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}page=${page}&limit=50`);
+    const { data } = await res.json();
+    items.push(...data.data);
+    if (page >= data.totalPages) return items;
+  }
+}
+
+const eventos = await fetchAll('https://apasbac-api.vercel.app/api/v1/events?when=upcoming');
+```
+
+<Callout type="tip">
+Prefira páginas menores e carregamento sob demanda em interfaces. Percorrer tudo só faz sentido em sincronizações de backend, respeitando o limite de requisições.
+</Callout>

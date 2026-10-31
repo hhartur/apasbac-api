@@ -1,0 +1,18 @@
+---
+title: Relatórios
+description: O que existe hoje em termos de relatórios e exportação.
+status: not-implemented
+---
+
+A API **não** oferece endpoints de relatório, estatística ou exportação. <Status value="not-implemented" />
+
+O que existe:
+
+- **Planilha de monitoramento (interna).** <Status value="partial" /> O código possui um serviço de Google Sheets (variáveis `GOOGLE_*`), mas, na versão atual, nenhum fluxo envia linhas para a planilha: a atualização de status na revisão só ocorreria para monitoramentos com `sheetsRowId`, campo que hoje nunca é preenchido. Não há endpoint para consultá-la.
+- **Contagens nas listagens.** Toda lista paginada traz `total`, útil para indicadores simples (ex.: `GET /animals?isAdopted=false&limit=1` informa quantos animais aguardam adoção).
+- **Auditoria.** <Endpoint method="GET" path="/admin/audit-logs" /> permite reconstruir atividades por período, usuário ou recurso (ADMIN).
+
+```bash
+# Quantos animais aguardam adoção
+curl -s "https://apasbac-api.vercel.app/api/v1/animals?isAdopted=false&limit=1" | jq '.data.total'
+```

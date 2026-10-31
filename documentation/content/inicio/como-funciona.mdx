@@ -1,0 +1,29 @@
+---
+title: Como funciona a API
+description: Arquitetura, ciclo de uma requisição e convenções que valem para todos os endpoints.
+---
+
+## Ciclo de uma requisição
+
+1. **Rate limiting** por IP (100 requisições por minuto, com limites menores nas rotas de login).
+2. **Autenticação**: se o endpoint é protegido, o access token JWT é validado e o usuário é recarregado do banco. Mudanças de role valem na hora; uma conta removida perde acesso imediatamente.
+3. **Autorização**: a role é comparada com a exigida pelo endpoint (`x-roles` no OpenAPI) e, quando aplicável, a propriedade do recurso (um tutor só vê os próprios monitoramentos).
+4. **Validação**: o corpo, a query e os parâmetros são validados. Campos desconhecidos são rejeitados com `400`.
+5. **Execução** da regra de negócio.
+6. **Auditoria** das operações que alteram dados.
+7. **Resposta** no envelope padrão `{ success, data, timestamp }` ou erro `{ success: false, statusCode, error, message, ... }`.
+
+## Convenções
+
+- Prefixo de todas as rotas: `/api/v1`.
+- JSON em UTF-8. Datas em ISO 8601 (UTC).
+- Identificadores: usuários e monitoramentos usam UUID; animais e eventos usam ID numérico e também um `uuid` público.
+- Cada resposta traz o header `X-Request-Id`. Envie o seu próprio (8 a 64 caracteres `A-Z a-z 0-9 . _ -`) para correlacionar logs.
+- Uploads: imagens validadas pelo conteúdo real, no máximo 8 MB.
+
+## O que a API não faz
+
+- Não usa cookies nem sessões de servidor: a autenticação é só por Bearer token.
+- Não oferece API keys ou tokens de serviço. Integrações automatizadas usam uma conta com a role mínima necessária.
+- Não expõe o endereço físico da APASBAC.
+- Não envia webhooks. Para acompanhar mudanças, consulte os endpoints periodicamente com moderação.

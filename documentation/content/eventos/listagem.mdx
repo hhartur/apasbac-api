@@ -1,0 +1,24 @@
+---
+title: Listagem de eventos
+description: Paginação, filtros por categoria, período, cidade e busca.
+---
+
+<Endpoint method="GET" path="/events" />
+
+| Parâmetro | Exemplo | Descrição |
+| --- | --- | --- |
+| `page`, `limit` | `1`, `12` | Paginação (máx. 50) |
+| `when` | `upcoming` / `past` | Ainda não encerrados / já encerrados (usa `endsAt`, ou `startsAt` quando não há fim) |
+| `from`, `to` | `2026-11-01T00:00:00-03:00` | Eventos que **começam** no intervalo |
+| `category` | `adocao` | Slug da categoria |
+| `city` | `Assis Chateaubriand` | Igualdade sem diferenciar maiúsculas |
+| `q` | `vacinação` | Busca em título e resumo |
+| `status` | `CANCELLED` | `PUBLISHED`, `CANCELLED` ou `FINISHED` |
+| `order` | `desc` | Ordem por `startsAt` (padrão `asc`) |
+
+```bash
+# Próximas feiras de adoção em novembro
+curl "https://apasbac-api.vercel.app/api/v1/events?category=adocao&from=2026-11-01T00:00:00-03:00&to=2026-11-30T23:59:59-03:00"
+```
+
+Resposta: lista paginada (`data.data`, `total`, `page`, `limit`, `totalPages`). Estado vazio: `data.data` é `[]` e `total` é `0`.

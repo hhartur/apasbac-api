@@ -1,0 +1,11 @@
+---
+title: Política de versões
+description: Como novas versões são publicadas e comunicadas.
+---
+
+- Versões seguem SemVer no OpenAPI (`info.version`) e são registradas no [changelog](/docs/recursos/changelog) com as etiquetas **BREAKING CHANGE**, **FEATURE**, **FIX**, **SECURITY** e **DEPRECATED**.
+- Mudanças incompatíveis exigem nova versão de caminho (`/api/v2`) e período de convivência anunciado.
+- Endpoints depreciados são marcados como `deprecated: true` no OpenAPI antes de serem removidos. Hoje não há endpoints depreciados.
+- Compatibilidade só é declarada quando coberta por testes da API.
+
+Veja também [Versionamento](/docs/inicio/versionamento).

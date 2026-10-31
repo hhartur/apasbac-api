@@ -1,0 +1,27 @@
+---
+title: Rate limiting
+description: Limites por IP, headers de controle e proteção contra força bruta.
+---
+
+Os limites estão em [Limites de requisições](/docs/fundamentos/limites). Resumo da proteção contra força bruta:
+
+- Login: 10 tentativas por minuto por IP, mesma resposta para conta inexistente e senha errada, cada falha auditada como `AUTH_LOGIN_FAILED` com IP.
+- Recuperação de senha: 5 por minuto, resposta idêntica com ou sem conta.
+- Cadastro: 5 por minuto.
+
+## Como o cliente deve reagir ao 429
+
+```javascript
+async function withBackoff(fn, tries = 3) {
+  for (let i = 0; ; i++) {
+    const res = await fn();
+    if (res.status !== 429 || i === tries - 1) return res;
+    const wait = Number(res.headers.get('Retry-After') ?? 2 ** i);
+    await new Promise((r) => setTimeout(r, wait * 1000));
+  }
+}
+```
+
+<Callout type="info">
+O IP considerado é o do cliente informado pelo proxy da hospedagem (`trust proxy`). Atrás de NAT, vários usuários compartilham o mesmo limite.
+</Callout>

@@ -60,15 +60,28 @@ model User {
   @@map("users")
 }
 
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  FINISHED
+}
+
 model RefreshToken {
-  id        String   @id @default(uuid())
-  token     String   @unique
+  id        String    @id @default(uuid())
+  // SHA-256 do refresh token (tokens antigos, anteriores à v1.1.0, ficaram em texto puro)
+  token     String    @unique
+  // Todos os tokens de uma mesma sessão (login) compartilham o familyId
+  familyId  String?
+  // Preenchido quando o token é rotacionado ou revogado; o registro é mantido para detectar reutilização
+  revokedAt DateTime?
   expiresAt DateTime
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
+  @@index([familyId])
   @@map("refresh_tokens")
 }
 
@@ -128,6 +141,77 @@ model Monitoring {
   animalId Int
 
   @@map("monitorings")
+}
+
+model EventCategory {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  events Event[]
+
+  @@map("event_categories")
+}
+
+model Event {
+  id                 Int         @id @default(autoincrement())
+  uuid               String      @unique @default(uuid())
+  title              String
+  slug               String      @unique
+  summary            String?
+  description        String
+  coverImageUrl      String?
+  galleryUrls        String[]
+  status             EventStatus @default(DRAFT)
+  // Data e horário ficam em um único timestamp (UTC); timezone indica o fuso de exibição
+  startsAt           DateTime
+  endsAt             DateTime?
+  timezone           String      @default("America/Sao_Paulo")
+  locationName       String?
+  address            String?
+  city               String?
+  state              String?
+  postalCode         String?
+  latitude           Float?
+  longitude          Float?
+  cancellationReason String?
+  publishedAt        DateTime?
+  createdById        String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  category   EventCategory @relation(fields: [categoryId], references: [id])
+  categoryId Int
+
+  @@index([status, startsAt])
+  @@map("events")
+}
+
+// Somente inserção: um trigger no banco bloqueia UPDATE e DELETE (ver migration 20261030000000_platform).
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorId     String?
+  actorRole   String?
+  action      String
+  resource    String
+  resourceId  String?
+  outcome     String   @default("SUCCESS")
+  description String?
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  requestId   String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([action])
+  @@index([resource, resourceId])
+  @@index([requestId])
+  @@map("audit_logs")
 }
 
 model PasswordReset {

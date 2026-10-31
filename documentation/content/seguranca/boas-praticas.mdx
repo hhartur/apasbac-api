@@ -1,0 +1,26 @@
+---
+title: Boas práticas de segurança
+description: Checklist para quem integra a APASBAC API e resumo das proteções do servidor.
+---
+
+## Para quem integra
+
+- [ ] Tokens fora do código-fonte, de URLs, de logs e do `localStorage`.
+- [ ] Sessões web no servidor, com cookie `httpOnly` ([Segurança de credenciais](/docs/autenticacao/credenciais)).
+- [ ] Renovação de token serializada e substituindo os dois tokens.
+- [ ] Dados da API exibidos com escape (texto puro, nunca `innerHTML`).
+- [ ] Ações escondidas na interface **e** tratamento de `403` (a API valida de qualquer forma).
+- [ ] Timeout em todas as chamadas e espera em `429`.
+- [ ] Nenhum dado pessoal (tutor, CPF, telefone) armazenado ou exibido além do necessário.
+
+## O que o servidor garante
+
+| Proteção | Onde ler |
+| --- | --- |
+| JWT de curta duração, refresh rotativo com detecção de reuso | [Autenticação segura](/docs/seguranca/autenticacao-segura) |
+| Roles e propriedade do recurso validadas no servidor | [Autorização](/docs/seguranca/autorizacao) |
+| Rate limiting por IP, mais rígido no login | [Rate limiting](/docs/seguranca/rate-limiting) |
+| Validação estrita de entrada (campos extras = 400) | [Proteção contra ataques](/docs/seguranca/protecao-contra-ataques) |
+| Upload validado pelo conteúdo, pastas por perfil | [Upload seguro](/docs/seguranca/upload-seguro) |
+| Headers de segurança (helmet) e CORS configurável | [CORS](/docs/seguranca/cors) |
+| Auditoria imutável sem dados sensíveis | [Auditoria](/docs/seguranca/auditoria) |

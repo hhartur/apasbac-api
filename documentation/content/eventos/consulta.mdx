@@ -1,0 +1,17 @@
+---
+title: Consulta individual
+description: Buscar um evento por ID ou por slug.
+---
+
+| Endpoint | Quando usar |
+| --- | --- |
+| <Endpoint method="GET" path="/events/{id}" /> | Você tem o ID numérico |
+| <Endpoint method="GET" path="/events/slug/{slug}" /> | URLs amigáveis no seu site (`/eventos/feira-de-adocao-de-primavera`) |
+
+Ambos retornam `404` para eventos inexistentes **e** para rascunhos.
+
+```bash
+curl "https://apasbac-api.vercel.app/api/v1/events/slug/feira-de-adocao-de-primavera"
+```
+
+O slug é gerado do título (sem acentos, minúsculo, com hífens) e é único: títulos repetidos recebem sufixo `-2`, `-3`. Ele pode mudar se a equipe editar o slug; guarde o `id` ou o `uuid` se precisar de uma referência estável.

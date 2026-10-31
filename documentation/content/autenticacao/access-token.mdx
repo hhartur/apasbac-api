@@ -1,0 +1,34 @@
+---
+title: Access Token
+description: Conteúdo, uso e validação do access token JWT.
+---
+
+O access token é um JWT assinado (HS256) com validade padrão de **15 minutos** (`JWT_ACCESS_EXPIRES_IN`).
+
+## Uso
+
+```http
+GET /api/v1/users/me HTTP/1.1
+Host: apasbac-api.vercel.app
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs…
+```
+
+## Conteúdo (payload)
+
+| Claim | Valor |
+| --- | --- |
+| `sub` | ID do usuário |
+| `email` | E-mail no momento do login |
+| `role` | Role no momento do login |
+| `iat`, `exp` | Emissão e expiração (segundos Unix) |
+
+<Callout type="warning" title="Não use o payload para autorização">
+A API ignora `role` do token e consulta a role atual no banco a cada requisição. No cliente, use <Endpoint method="GET" path="/users/me" /> para saber a role vigente; decodificar o JWT serve apenas para estimar a expiração.
+</Callout>
+
+## Quando é rejeitado (401)
+
+- ausente ou sem o prefixo `Bearer`;
+- expirado;
+- assinatura inválida (outro segredo, adulteração);
+- usuário removido.

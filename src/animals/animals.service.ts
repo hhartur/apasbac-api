@@ -5,6 +5,7 @@ import { ConfigAppService } from '../config-app/config-app.service';
 import { CreateAnimalDto } from './dto/create-animal.dto';
 import { UpdateAnimalDto } from './dto/update-animal.dto';
 import * as QRCode from 'qrcode';
+import { assertImages } from '../common/uploads';
 
 @Injectable()
 export class AnimalsService {
@@ -16,6 +17,7 @@ export class AnimalsService {
 
   async create(dto: CreateAnimalDto, photos: Express.Multer.File[]) {
     if (photos.length > 3) throw new BadRequestException('Máximo de 3 fotos permitido');
+    assertImages(photos);
 
     if (dto.adoptedById) {
       const adopter = await this.prisma.user.findUnique({ where: { id: dto.adoptedById } });
@@ -31,7 +33,7 @@ export class AnimalsService {
     }
     // ── Fluxo antigo: arquivos multipart → upload no backend ──
     else if (photos.length > 0) {
-      photoUrls = await this.storage.uploadMany(photos, 'animals/photos');
+      photoUrls = await this.storage.uploadMany(photos, 'animals/photos', true);
     }
 
     const animal = await this.prisma.animal.create({
@@ -67,14 +69,21 @@ export class AnimalsService {
     return QRCode.toDataURL(url, { width: 300, margin: 2, color: { dark: '#c0392b', light: '#ffffff' } });
   }
 
-  async findAll(page = 1, limit = 20, isAdopted?: boolean) {
+  async findAll(page = 1, limit = 20, isAdopted?: boolean, viewer?: { id: string; role: string } | null) {
     const skip = (page - 1) * limit;
     const where = isAdopted !== undefined ? { isAdopted } : {};
     const [data, total] = await Promise.all([
       this.prisma.animal.findMany({ skip, take: limit, where, orderBy: { createdAt: 'desc' }, include: { adoptedBy: { select: { id: true, fullName: true } } } }),
       this.prisma.animal.count({ where }),
     ]);
-    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return { data: data.map((a) => this.forViewer(a, viewer)), total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  // The QR uuid unlocks the tutor's contact data (findByUuid), so it is only listed for staff and the animal's own tutor.
+  private forViewer<T extends { adoptedById: string | null }>(animal: T, viewer?: { id: string; role: string } | null) {
+    if (viewer && (viewer.role === 'ADMIN' || viewer.role === 'STAFF' || animal.adoptedById === viewer.id)) return animal;
+    const { uuid, qrCodeUrl, ...rest } = animal as any;
+    return { ...rest, adoptedById: null, adoptedBy: null };
   }
 
   async findOne(id: number) {
@@ -137,8 +146,10 @@ export class AnimalsService {
     let photos = animal.photos;
     if (newPhotos && newPhotos.length > 0) {
       if (newPhotos.length > 3) throw new BadRequestException('Máximo de 3 fotos');
+      assertImages(newPhotos);
+      // Upload first: if it fails, the current photos are kept.
+      photos = await this.storage.uploadMany(newPhotos, 'animals/photos', true);
       await this.storage.deleteMany(animal.photos);
-      photos = await this.storage.uploadMany(newPhotos, 'animals/photos');
     }
     return this.prisma.animal.update({
       where: { id }, data: { ...dto, photos },
@@ -172,7 +183,9 @@ export class AnimalsService {
   async linkAdopter(animalId: number, userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('Usuário não encontrado');
-    await this.prisma.user.update({ where: { id: userId }, data: { role: 'TUTOR' } });
+    await this.findOne(animalId);
+    // Only promotes USER: an ADMIN/STAFF who adopts keeps their role.
+    if (user.role === 'USER') await this.prisma.user.update({ where: { id: userId }, data: { role: 'TUTOR' } });
     return this.prisma.animal.update({
       where: { id: animalId },
       data: { isAdopted: true, adoptedById: userId },

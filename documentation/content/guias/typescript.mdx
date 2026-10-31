@@ -1,0 +1,58 @@
+---
+title: Integração com TypeScript
+description: Tipos do envelope, da paginação e dos principais recursos.
+---
+
+## Tipos
+
+```typescript
+export interface ApiSuccess<T> { success: true; data: T; timestamp: string }
+export interface ApiFailure {
+  success: false; statusCode: number; error: string; message: string | string[];
+  timestamp: string; path: string; requestId?: string;
+}
+export interface Page<T> { data: T[]; total: number; page: number; limit: number; totalPages: number }
+
+export type Role = 'ADMIN' | 'STAFF' | 'TUTOR' | 'USER';
+export interface User { id: string; fullName: string; email: string; phone: string; cpf: string; role: Role; createdAt: string; updatedAt: string }
+export interface Session { user: User; accessToken: string; refreshToken: string }
+
+export interface Animal {
+  id: number; uuid?: string; name: string; description: string; breed: string;
+  sex: 'MALE' | 'FEMALE'; size: 'SMALL' | 'MEDIUM' | 'LARGE' | 'EXTRA_LARGE';
+  vaccines: string[]; temperament: string; escapeTendency: boolean; photos: string[];
+  isAdopted: boolean; createdAt: string; updatedAt: string;
+}
+
+export interface EventCategory { id: number; name: string; slug: string }
+export interface ApasbacEvent {
+  id: number; uuid: string; title: string; slug: string; summary: string | null; description: string;
+  coverImageUrl: string | null; galleryUrls: string[]; status: 'PUBLISHED' | 'CANCELLED' | 'FINISHED';
+  startsAt: string; endsAt: string | null; timezone: string;
+  locationName: string | null; address: string | null; city: string | null; state: string | null;
+  latitude: number | null; longitude: number | null; cancellationReason: string | null;
+  category: EventCategory;
+}
+```
+
+## Função tipada
+
+```typescript
+const API = 'https://apasbac-api.vercel.app/api/v1';
+
+export async function get<T>(path: string, token?: string): Promise<T> {
+  const res = await fetch(`${API}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    signal: AbortSignal.timeout(15000),
+  });
+  const body = (await res.json()) as ApiSuccess<T> | ApiFailure;
+  if (!body.success) throw new Error([body.message].flat().join('; '));
+  return body.data;
+}
+
+const eventos = await get<Page<ApasbacEvent>>('/events?when=upcoming');
+```
+
+<Callout type="tip" title="Gerando tipos automaticamente">
+Gere tipos a partir do contrato oficial: `npx openapi-typescript https://SUA-DOCUMENTACAO/openapi.json -o apasbac.d.ts`.
+</Callout>

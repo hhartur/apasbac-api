@@ -1,0 +1,21 @@
+---
+title: Instruções de integração
+description: O processo em 12 etapas que um agente deve seguir.
+---
+
+1. **Identifique a tecnologia** (framework, linguagem, SSR ou SPA, mobile).
+2. **Verifique se há backend próprio.** Sem backend, apenas endpoints públicos com segurança.
+3. **Leia a autenticação**: [Visão geral](/docs/autenticacao/visao-geral).
+4. **Selecione os endpoints** no `/openapi.json`, anotando `x-public` e `x-roles`.
+5. **Crie uma camada de comunicação** única: URL base configurável, timeout, desembrulho de `data`, erros tipados.
+6. **Trate respostas**: envelope, paginação, listas vazias.
+7. **Implemente autenticação**: login, armazenamento seguro, renovação serializada, logout.
+8. **Implemente autorização no app**: esconda ações conforme a role; trate `403` mesmo assim.
+9. **Estados de carregamento** em toda requisição visível.
+10. **Falhas**: rede, `4xx`, `5xx`, `429` com `Retry-After`.
+11. **Testes** com respostas simuladas no formato real.
+12. **Valide** contra a API local e só então produção.
+
+<Callout type="tip">
+Reaproveite o que o projeto já tem (cliente HTTP, gerenciador de estado, biblioteca de formulários). Não adicione dependências para algo que algumas linhas resolvem.
+</Callout>

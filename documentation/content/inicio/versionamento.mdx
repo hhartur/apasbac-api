@@ -1,0 +1,27 @@
+---
+title: Versionamento
+description: Como a versão aparece nas URLs e no OpenAPI, e o que conta como mudança incompatível.
+---
+
+## Onde a versão aparece
+
+- **URL**: `/api/v1`. O número só muda em uma quebra de contrato ampla.
+- **OpenAPI**: `info.version` segue [SemVer](https://semver.org/lang/pt-BR/) (atual: `1.1.0`).
+- **Changelog**: [Recursos › Changelog](/docs/recursos/changelog).
+
+## Compatibilidade
+
+Considera-se compatível (versão menor):
+
+- novos endpoints, novos campos opcionais em requisições, novos campos em respostas;
+- validações mais estritas que bloqueiam abuso sem afetar o uso documentado.
+
+Considera-se incompatível (registrado como **BREAKING CHANGE**):
+
+- remover ou renomear endpoints ou campos;
+- tornar obrigatório um campo antes opcional;
+- mudar o formato do envelope de resposta.
+
+<Callout type="info">
+Clientes devem ignorar campos desconhecidos nas respostas. Assim, novos campos nunca quebram sua integração.
+</Callout>

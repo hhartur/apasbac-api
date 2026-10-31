@@ -1,0 +1,46 @@
+---
+title: Integração com Nuxt
+description: useFetch para dados públicos e server/api como BFF para sessões.
+---
+
+## Dados públicos
+
+```vue
+<script setup lang="ts">
+const config = useRuntimeConfig();
+const { data, error, pending } = await useFetch('/events', {
+  baseURL: config.public.apasbacApi,
+  query: { when: 'upcoming', limit: 12 },
+  transform: (r: any) => r.data,
+});
+</script>
+```
+
+```typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  runtimeConfig: {
+    apasbacApiPrivate: 'https://apasbac-api.vercel.app/api/v1', // só no servidor
+    public: { apasbacApi: 'https://apasbac-api.vercel.app/api/v1' },
+  },
+});
+```
+
+## Login no servidor (BFF)
+
+```typescript
+// server/api/login.post.ts
+export default defineEventHandler(async (event) => {
+  const body = await readBody(event);
+  const { apasbacApiPrivate } = useRuntimeConfig();
+  const res = await $fetch<any>(`${apasbacApiPrivate}/auth/login`, { method: 'POST', body }).catch((e) => {
+    throw createError({ statusCode: e.response?.status ?? 500, statusMessage: 'Falha no login' });
+  });
+  const opts = { httpOnly: true, secure: true, sameSite: 'lax' as const, path: '/' };
+  setCookie(event, 'apasbac_at', res.data.accessToken, { ...opts, maxAge: 900 });
+  setCookie(event, 'apasbac_rt', res.data.refreshToken, { ...opts, maxAge: 604800 });
+  return { user: res.data.user };
+});
+```
+
+Chamadas autenticadas passam por rotas `server/api/*`, que leem o cookie e repassam `Authorization: Bearer` à API, renovando com `/auth/refresh` quando receberem `401`.

@@ -1,0 +1,48 @@
+---
+title: Integração com HTML, CSS e JavaScript
+description: Mostrar animais e eventos em uma página estática, e as limitações de segurança.
+---
+
+Uma página estática pode usar **somente os endpoints públicos**.
+
+```html
+<section aria-labelledby="titulo-animais">
+  <h2 id="titulo-animais">Adote um amigo</h2>
+  <p id="status" aria-live="polite">Carregando…</p>
+  <ul id="animais" class="grid"></ul>
+</section>
+
+<script type="module">
+  const API = 'https://apasbac-api.vercel.app/api/v1';
+  const lista = document.querySelector('#animais');
+  const status = document.querySelector('#status');
+
+  try {
+    const res = await fetch(`${API}/animals?isAdopted=false&limit=12`);
+    if (!res.ok) throw new Error(res.status);
+    const { data } = await res.json();
+    status.textContent = data.data.length ? '' : 'Nenhum animal disponível no momento.';
+    for (const a of data.data) {
+      const li = document.createElement('li');
+      const img = document.createElement('img');
+      img.src = a.photos[0] ?? '';
+      img.alt = `Foto de ${a.name}`;
+      img.loading = 'lazy';
+      const nome = document.createElement('h3');
+      nome.textContent = a.name; // textContent: nunca innerHTML com dados da API
+      li.append(img, nome);
+      lista.append(li);
+    }
+  } catch {
+    status.textContent = 'Não foi possível carregar os animais. Tente novamente mais tarde.';
+  }
+</script>
+```
+
+<Callout type="danger" title="Limitações de uma página sem backend">
+- Tudo o que está no HTML/JS é visível para qualquer visitante. Não existe forma segura de guardar senhas ou tokens de uma conta da equipe.
+- Login de usuários é possível, mas a sessão fica exposta a qualquer script da página (XSS). Para áreas logadas, use um backend.
+- Use `textContent` (não `innerHTML`) ao exibir dados da API.
+</Callout>
+
+Para eventos, veja o exemplo completo em [Exemplos de implementação](/docs/eventos/exemplos#html-e-javascript).

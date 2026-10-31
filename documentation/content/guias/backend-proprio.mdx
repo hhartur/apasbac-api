@@ -1,0 +1,25 @@
+---
+title: Integração com backend próprio
+description: Padrão BFF — o navegador fala com o seu servidor e o seu servidor fala com a APASBAC.
+---
+
+```
+Navegador ──cookie httpOnly──▶ Seu backend ──Bearer token──▶ APASBAC API
+```
+
+## Por que
+
+- Tokens nunca chegam ao JavaScript do navegador.
+- Você controla cache, limites e quais dados chegam ao cliente.
+- CORS deixa de ser um problema: a chamada à API é servidor a servidor.
+
+## Requisitos do seu backend
+
+1. Sessão própria (cookie `httpOnly`, `Secure`, `SameSite=Lax`) ligada aos tokens da APASBAC guardados no servidor.
+2. Renovação com `/auth/refresh`, serializada por usuário e salvando os **dois** tokens novos.
+3. Proteção CSRF nas rotas que alteram dados (cookie `SameSite` + verificação de `Origin`).
+4. Timeout (15 s) e tratamento do envelope de erro.
+5. Cache de dados públicos (eventos e animais mudam poucas vezes por dia).
+6. Repassar `X-Request-Id` para facilitar suporte.
+
+Exemplos de implementação: [Next.js](/docs/guias/nextjs), [Nuxt](/docs/guias/nuxt), [Laravel](/docs/guias/laravel), [Python](/docs/guias/python).

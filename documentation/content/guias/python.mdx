@@ -1,0 +1,57 @@
+---
+title: Integração com Python
+description: Cliente com requests, timeout, renovação automática e paginação.
+---
+
+```python
+import os
+import requests
+
+API = os.environ.get("APASBAC_API_URL", "https://apasbac-api.vercel.app/api/v1")
+
+
+class ApasbacError(Exception):
+    def __init__(self, status, message, request_id=None):
+        super().__init__("; ".join(message) if isinstance(message, list) else message)
+        self.status, self.request_id = status, request_id
+
+
+class Apasbac:
+    def __init__(self):
+        self.s = requests.Session()
+        self.access = self.refresh_token = None
+
+    def login(self, email, password):
+        data = self._call("POST", "/auth/login", json={"email": email, "password": password}, auth=False)
+        self.access, self.refresh_token = data["accessToken"], data["refreshToken"]
+        return data["user"]
+
+    def _refresh(self):
+        r = self.s.post(f"{API}/auth/refresh", json={"refreshToken": self.refresh_token}, timeout=15)
+        if not r.ok:
+            return False
+        d = r.json()["data"]
+        self.access, self.refresh_token = d["accessToken"], d["refreshToken"]
+        return True
+
+    def _call(self, method, path, auth=True, retried=False, **kw):
+        headers = {"Authorization": f"Bearer {self.access}"} if auth and self.access else {}
+        r = self.s.request(method, f"{API}{path}", headers=headers, timeout=15, **kw)
+        if r.status_code == 401 and auth and not retried and self.refresh_token and self._refresh():
+            return self._call(method, path, auth, True, **kw)
+        if r.status_code == 204:
+            return None
+        body = r.json()
+        if not r.ok:
+            raise ApasbacError(r.status_code, body.get("message"), body.get("requestId"))
+        return body["data"]
+
+    def eventos_futuros(self):
+        page, items = 1, []
+        while True:
+            d = self._call("GET", "/events", auth=False, params={"when": "upcoming", "page": page, "limit": 50})
+            items += d["data"]
+            if page >= d["totalPages"]:
+                return items
+            page += 1
+```

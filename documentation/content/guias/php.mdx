@@ -1,0 +1,67 @@
+---
+title: Integração com PHP
+description: Cliente sem dependências usando ext-curl.
+---
+
+```php
+<?php
+final class Apasbac
+{
+    private ?string $access = null;
+    private ?string $refresh = null;
+
+    public function __construct(private string $base = 'https://apasbac-api.vercel.app/api/v1') {}
+
+    public function login(string $email, string $password): array
+    {
+        $d = $this->call('POST', '/auth/login', ['email' => $email, 'password' => $password], false);
+        [$this->access, $this->refresh] = [$d['accessToken'], $d['refreshToken']];
+        return $d['user'];
+    }
+
+    public function call(string $method, string $path, ?array $body = null, bool $auth = true, bool $retried = false): mixed
+    {
+        $headers = ['Accept: application/json'];
+        if ($body !== null) $headers[] = 'Content-Type: application/json';
+        if ($auth && $this->access) $headers[] = 'Authorization: Bearer ' . $this->access;
+
+        $ch = curl_init($this->base . $path);
+        curl_setopt_array($ch, [
+            CURLOPT_CUSTOMREQUEST => $method,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_POSTFIELDS => $body !== null ? json_encode($body) : null,
+        ]);
+        $raw = curl_exec($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($status === 401 && $auth && !$retried && $this->refresh && $this->renew()) {
+            return $this->call($method, $path, $body, $auth, true);
+        }
+        $json = json_decode($raw, true);
+        if ($status >= 400) {
+            $msg = is_array($json['message'] ?? null) ? implode('; ', $json['message']) : ($json['message'] ?? 'Erro');
+            throw new RuntimeException($msg, $status);
+        }
+        return $json['data'] ?? null;
+    }
+
+    private function renew(): bool
+    {
+        try {
+            $d = $this->call('POST', '/auth/refresh', ['refreshToken' => $this->refresh], false, true);
+            [$this->access, $this->refresh] = [$d['accessToken'], $d['refreshToken']];
+            return true;
+        } catch (RuntimeException) {
+            return false;
+        }
+    }
+}
+
+$api = new Apasbac();
+$eventos = $api->call('GET', '/events?when=upcoming', null, false);
+```
+
+Guarde os tokens na sessão do servidor (`$_SESSION`), nunca em cookies legíveis por JavaScript nem no HTML.

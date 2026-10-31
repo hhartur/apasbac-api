@@ -1,0 +1,18 @@
+---
+title: Gerenciamento de sessões
+description: O que é uma sessão na API e como encerrá-las.
+---
+
+Cada login cria uma **família** de refresh tokens — a sessão. A família avança a cada renovação.
+
+| Evento | Efeito nas sessões |
+| --- | --- |
+| Login | Nova sessão |
+| Renovação | Mesma sessão, novo token |
+| Reuso de token rotacionado | Sessão revogada |
+| Logout com refresh token | Aquela sessão termina |
+| Logout sem refresh token | Todas as sessões do usuário terminam |
+| Redefinição de senha | Todas as sessões terminam |
+| Usuário removido | Todas as sessões terminam (cascata) |
+
+<Status value="not-implemented" /> Não há endpoint para listar sessões ativas ou dispositivos.

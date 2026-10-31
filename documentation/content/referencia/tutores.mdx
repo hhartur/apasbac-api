@@ -1,0 +1,18 @@
+---
+title: Tutores
+description: Tutores são usuários com role TUTOR; não existe um recurso /tutors separado.
+status: implemented
+---
+
+Não há endpoints `/tutors`. Um tutor é um [usuário](/api-reference/usuarios) com role `TUTOR`, criado automaticamente quando a equipe vincula um adotante a um animal.
+
+| Necessidade | Endpoint | Quem |
+| --- | --- | --- |
+| Tornar alguém tutor | <Endpoint method="POST" path="/animals/{id}/adopter" /> | ADMIN, STAFF |
+| Ver os animais do tutor logado | <Endpoint method="GET" path="/users/me" /> (`adoptedAnimals`) | O próprio usuário |
+| Listar os monitoramentos do tutor logado | <Endpoint method="GET" path="/monitoring/mine" /> | TUTOR |
+| Contato do tutor de um animal encontrado | <Endpoint method="GET" path="/animals/public/uuid/{uuid}" /> | Público, via QR Code |
+
+<Callout type="security" title="Dados de tutor">
+Nome, telefone e e-mail do tutor só aparecem na consulta pelo QR Code de um animal **adotado** — a finalidade é devolver um animal perdido. A listagem pública de animais não inclui o `uuid` nem dados do adotante.
+</Callout>

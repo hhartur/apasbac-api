@@ -12,6 +12,8 @@ import { StorageModule } from './storage/storage.module';
 import { MailModule } from './mail/mail.module';
 import { SheetsModule } from './sheets/sheets.module';
 import { AppVersionModule } from './app-version/app-version.module';
+import { AuditModule } from './audit/audit.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { AppVersionModule } from './app-version/app-version.module';
     MailModule,
     SheetsModule,
     AppVersionModule,
+    AuditModule,
+    EventsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

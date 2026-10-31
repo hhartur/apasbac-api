@@ -1,0 +1,25 @@
+---
+title: Conceitos básicos
+description: Entidades da API e como elas se relacionam.
+---
+
+## Entidades
+
+| Entidade | Identificador | Descrição |
+| --- | --- | --- |
+| Usuário | `id` (UUID) | Pessoa com conta. Tem uma role: `ADMIN`, `STAFF`, `TUTOR` ou `USER`. |
+| Animal | `id` (inteiro) e `uuid` | Animal acolhido. O `uuid` é a chave do QR Code da coleira. |
+| Adoção | — | Não é uma entidade separada: é o vínculo `adoptedById` do animal com um usuário. |
+| Monitoramento | `id` (UUID) | Acompanhamento pós-adoção: o tutor envia fotos e vídeo; a equipe aprova ou rejeita. |
+| Evento | `id` (inteiro), `uuid` e `slug` | Ação institucional (feira, campanha, mutirão) com datas, local e imagens. |
+| Categoria de evento | `id` (inteiro) e `slug` | Classificação administrável dos eventos. |
+| Configuração | `key` | Par chave/valor do sistema (período de monitoramento, contatos). |
+| Registro de auditoria | `id` (UUID) | Registro imutável de uma operação. |
+
+## Ciclo de adoção
+
+1. A equipe cadastra o animal (`POST /animals`); o QR Code é gerado automaticamente.
+2. Na adoção, a equipe vincula o adotante (`POST /animals/:id/adopter`). Se ele era `USER`, passa a `TUTOR`.
+3. A equipe cria monitoramentos (`POST /monitoring`) com prazo calculado pela configuração do período.
+4. O tutor envia fotos e vídeo (`POST /monitoring/:id/submit`).
+5. A equipe aprova ou rejeita (`PATCH /monitoring/:id/review`); o tutor recebe e-mail e as mídias são apagadas.

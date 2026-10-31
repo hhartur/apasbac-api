@@ -1,0 +1,20 @@
+---
+title: Arquivos de instrução
+description: llms.txt, llms-full.txt, AGENTS.md e openapi.json — o que cada um contém.
+---
+
+| Arquivo | Conteúdo | Quando usar |
+| --- | --- | --- |
+| [`/llms.txt`](/llms.txt) | Resumo, regras essenciais, índice de páginas e de endpoints | Contexto inicial curto |
+| [`/llms-full.txt`](/llms-full.txt) | Toda a documentação em texto + referência completa dos endpoints | Contexto completo para implementar |
+| [`/AGENTS.md`](/AGENTS.md) | Papel, regras e processo para agentes de código | Copiar para a raiz do projeto que vai consumir a API |
+| [`/openapi.json`](/openapi.json) | Contrato OpenAPI 3.0 | Gerar clientes, validar campos e respostas |
+
+<a href="/AGENTS.md" download="AGENTS.md">Baixar AGENTS.md</a>
+
+Os três primeiros são gerados a partir desta documentação e do OpenAPI a cada build; não ficam desatualizados em relação ao site.
+
+## Como usar em ferramentas
+
+- **Claude Code, Codex, Cursor, Windsurf, Cline, Aider, Copilot**: salve o `AGENTS.md` na raiz do projeto (ou referencie-o no arquivo de regras da ferramenta) e peça para o agente ler `/llms-full.txt` antes de implementar.
+- **ChatGPT, Claude, Gemini (chat)**: cole o conteúdo de `/llms.txt` ou anexe `/llms-full.txt` e o `openapi.json`.

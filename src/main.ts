@@ -1,53 +1,16 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { configureApp, createOpenApiDocument } from './setup';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  configureApp(app);
 
-  app.setGlobalPrefix('api/v1');
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: { enableImplicitConversion: true },
-    }),
-  );
-
-  app.useGlobalFilters(new HttpExceptionFilter());
-  app.useGlobalInterceptors(new TransformInterceptor());
-
-  app.enableCors({
-    origin: '*',
-    credentials: true,
-  });
-
-  // ── Swagger ──────────────────────────────────────────────────────────────
-  const config = new DocumentBuilder()
-    .setTitle('APASBAC API')
-    .setDescription(
-      'API oficial da <strong>APASBAC</strong> — Associação de Proteção aos Animais Socorro Bicho Assis Chateaubriand.<br/>' +
-      'Gerencie animais, adoções, monitoramentos e muito mais.',
-    )
-    .setVersion('1.0')
-    .addBearerAuth(
-      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', in: 'header' },
-      'access-token',
-    )
-    .addTag('Auth', 'Autenticação e gerenciamento de sessão')
-    .addTag('Users', 'Gerenciamento de usuários')
-    .addTag('Animals', 'Gerenciamento de animais')
-    .addTag('Config', 'Configurações do sistema (Admin/Staff)')
-    .addTag('Monitor', 'Monitoramento de adoções')
-    .addTag('Public', 'Endpoints públicos (sem autenticação)')
-    .build();
-
-  const document = SwaggerModule.createDocument(app, config);
+  // ── Swagger / OpenAPI ────────────────────────────────────────────────────
+  const document = createOpenApiDocument(app);
+  // Public, machine-readable contract used by the documentation site and AI agents.
+  app.getHttpAdapter().get('/openapi.json', (_req, res: any) => res.json(document));
 
   const customCss = `
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');

@@ -1,0 +1,28 @@
+---
+title: Introdução aos eventos
+description: Feiras de adoção, campanhas e ações da APASBAC disponíveis para qualquer site.
+status: implemented
+---
+
+O módulo de eventos permite que a associação cadastre e divulgue feiras de adoção, campanhas de vacinação e arrecadação, ações educativas, mutirões e encontros. Qualquer site pode exibir os eventos **sem autenticação**.
+
+## Ciclo de vida
+
+| Status | Visível publicamente | Uso |
+| --- | --- | --- |
+| `DRAFT` | Não | Em preparação (padrão ao criar) |
+| `PUBLISHED` | Sim | Divulgado |
+| `CANCELLED` | Sim, com `cancellationReason` | Cancelado — continua visível para avisar o público |
+| `FINISHED` | Sim | Encerrado — histórico |
+
+`publishedAt` registra a primeira publicação. A passagem para `FINISHED` é manual; para separar futuros e passados pela data, use `when=upcoming` ou `when=past`.
+
+## Endpoints
+
+| Público | Equipe (ADMIN/STAFF) | Somente ADMIN |
+| --- | --- | --- |
+| <Endpoint method="GET" path="/events" /> | <Endpoint method="POST" path="/events" /> | <Endpoint method="DELETE" path="/events/{id}" /> |
+| <Endpoint method="GET" path="/events/{id}" /> | <Endpoint method="PATCH" path="/events/{id}" /> | <Endpoint method="POST" path="/events/categories" /> |
+| <Endpoint method="GET" path="/events/slug/{slug}" /> | <Endpoint method="POST" path="/events/{id}/image" /> | <Endpoint method="PATCH" path="/events/categories/{id}" /> |
+| <Endpoint method="GET" path="/events/categories" /> | <Endpoint method="POST" path="/events/{id}/gallery" /> | <Endpoint method="DELETE" path="/events/categories/{id}" /> |
+| | <Endpoint method="GET" path="/admin/events" /> | |

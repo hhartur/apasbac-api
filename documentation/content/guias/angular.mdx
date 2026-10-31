@@ -1,0 +1,56 @@
+---
+title: Integração com Angular
+description: Serviço com HttpClient e interceptor de autenticação com renovação serializada.
+---
+
+```typescript
+// apasbac.service.ts
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { map } from 'rxjs';
+
+export const APASBAC_API = 'https://apasbac-api.vercel.app/api/v1';
+
+@Injectable({ providedIn: 'root' })
+export class ApasbacService {
+  private http = inject(HttpClient);
+  animais(page = 1) {
+    return this.http.get<any>(`${APASBAC_API}/animals`, { params: { isAdopted: false, page } }).pipe(map((r) => r.data));
+  }
+  eventos() {
+    return this.http.get<any>(`${APASBAC_API}/events`, { params: { when: 'upcoming' } }).pipe(map((r) => r.data));
+  }
+}
+```
+
+```typescript
+// auth.interceptor.ts
+import { HttpErrorResponse, HttpInterceptorFn, HttpClient } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { catchError, finalize, shareReplay, switchMap, throwError, Observable, map } from 'rxjs';
+import { APASBAC_API } from './apasbac.service';
+import { TokenStore } from './token-store'; // tokens em memória
+
+let refresh$: Observable<string> | null = null;
+
+export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  if (!req.url.startsWith(APASBAC_API) || req.url.endsWith('/auth/refresh')) return next(req);
+  const store = inject(TokenStore);
+  const http = inject(HttpClient);
+  const withToken = (t: string | null) => (t ? req.clone({ setHeaders: { Authorization: `Bearer ${t}` } }) : req);
+
+  return next(withToken(store.access)).pipe(
+    catchError((err: HttpErrorResponse) => {
+      if (err.status !== 401 || !store.refresh) return throwError(() => err);
+      refresh$ ??= http.post<any>(`${APASBAC_API}/auth/refresh`, { refreshToken: store.refresh }).pipe(
+        map((r) => { store.set(r.data.accessToken, r.data.refreshToken); return r.data.accessToken as string; }),
+        shareReplay(1),
+        finalize(() => (refresh$ = null)),
+      );
+      return refresh$.pipe(switchMap((t) => next(withToken(t))));
+    }),
+  );
+};
+```
+
+Registre com `provideHttpClient(withInterceptors([authInterceptor]))`.

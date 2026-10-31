@@ -1,0 +1,25 @@
+---
+title: Perguntas frequentes
+description: Dúvidas comuns de quem integra a APASBAC API.
+---
+
+### Preciso de uma chave de API?
+Não. Endpoints públicos funcionam sem credenciais; os demais usam login JWT.
+
+### Posso mostrar os animais da APASBAC no meu site?
+Sim, com `GET /animals?isAdopted=false`. Divulgue com o nome da associação.
+
+### Por que a lista de animais não traz o `uuid`?
+O `uuid` dá acesso ao contato do tutor pelo QR Code; por isso só a equipe e o próprio tutor o recebem.
+
+### Existe ambiente de testes?
+Não há staging público. Rode a API localmente com Docker (veja [Ambientes](/docs/inicio/ambientes)).
+
+### Como crio uma conta de equipe?
+Cadastre-se normalmente e peça a um ADMIN a mudança de role.
+
+### A API envia webhooks?
+Não.
+
+### Recebi 426 Upgrade Required.
+Seu cliente enviou `X-App-Platform: android` com versão abaixo do mínimo. Esse header é exclusivo do app oficial.

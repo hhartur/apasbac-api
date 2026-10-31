@@ -1,0 +1,59 @@
+---
+title: Integração com React
+description: Hook de dados, estados de carregamento e erro, e sessão em memória.
+---
+
+## Hook de consulta
+
+```tsx
+import { useEffect, useState } from 'react';
+
+const API = 'https://apasbac-api.vercel.app/api/v1';
+
+export function useApasbac<T>(path: string) {
+  const [state, setState] = useState<{ data?: T; error?: string; loading: boolean }>({ loading: true });
+  useEffect(() => {
+    const ctrl = new AbortController();
+    setState({ loading: true });
+    fetch(`${API}${path}`, { signal: ctrl.signal })
+      .then(async (res) => {
+        const body = await res.json();
+        if (!res.ok) throw new Error([body.message].flat().join('; '));
+        setState({ data: body.data, loading: false });
+      })
+      .catch((e) => { if (e.name !== 'AbortError') setState({ error: e.message, loading: false }); });
+    return () => ctrl.abort();
+  }, [path]);
+  return state;
+}
+```
+
+## Página de animais
+
+```tsx
+export function AnimaisParaAdocao() {
+  const { data, error, loading } = useApasbac<{ data: Animal[]; total: number }>('/animals?isAdopted=false&limit=12');
+  if (loading) return <p aria-busy="true">Carregando…</p>;
+  if (error) return <p role="alert">Não foi possível carregar os animais.</p>;
+  if (!data?.data.length) return <p>Nenhum animal disponível no momento.</p>;
+  return (
+    <ul className="grid">
+      {data.data.map((a) => (
+        <li key={a.id}>
+          {a.photos[0] && <img src={a.photos[0]} alt={`Foto de ${a.name}`} loading="lazy" />}
+          <h3>{a.name}</h3>
+          <p>{a.breed}</p>
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+<Callout type="info">
+Se o projeto já usa React Query, SWR ou Redux Toolkit Query, use a mesma biblioteca com a função de requisição do [guia de JavaScript](/docs/guias/javascript) — não adicione outra.
+</Callout>
+
+## Sessão
+
+Guarde tokens em um contexto React (memória). Para manter o login após recarregar a página, a sessão precisa morar num backend com cookie `httpOnly`; veja [Next.js](/docs/guias/nextjs) ou [Backend próprio](/docs/guias/backend-proprio).
