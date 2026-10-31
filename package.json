@@ -21,7 +21,8 @@
     "openapi:export": "ts-node scripts/export-openapi.ts",
     "openapi:check": "ts-node scripts/export-openapi.ts --check",
     "test:e2e": "node --require ts-node/register --test test/e2e/*.e2e.ts",
-    "docs:build": "node scripts/build-docs.mjs"
+    "docs:build": "node scripts/build-docs.mjs",
+    "disposable:update": "node scripts/update-disposable-domains.mjs"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

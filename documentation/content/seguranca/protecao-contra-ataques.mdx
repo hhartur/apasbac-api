@@ -11,6 +11,7 @@ description: SQL injection, XSS, CSRF, enumeração, mass assignment e outras am
 | CSRF | Não se aplica à API (sem cookies). Se o seu site usa cookies, proteja as rotas dele |
 | Mass assignment | DTOs com `whitelist` + `forbidNonWhitelisted`: campos extras retornam 400 |
 | Enumeração de usuários | Login e recuperação de senha com respostas idênticas. O cadastro informa e-mail/CPF repetido; mitigado por 5 tentativas/min |
+| Contas com e-mail descartável | Cadastro recusa mais de 10 mil domínios temporários (lista disposable-email-domains) |
 | Força bruta | Rate limiting no login e auditoria das falhas |
 | Payloads grandes | JSON até 100 KB; arquivos até 8 MB |
 | Clickjacking / MIME sniffing | Headers do helmet (`X-Frame-Options`, `X-Content-Type-Options`, `Strict-Transport-Security`, entre outros) |

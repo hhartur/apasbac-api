@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsString, MinLength, MaxLength, Matches, IsNotEmpty } from 'class-validator';
+import { IsNotDisposableEmail } from '../../common/disposable-email';
 
 export class RegisterDto {
   @ApiProperty({ example: 'João da Silva', description: 'Nome completo do usuário' })
@@ -14,8 +15,9 @@ export class RegisterDto {
   @IsString() @IsNotEmpty() @Matches(/^\d{11}$/, { message: 'CPF deve conter 11 dígitos numéricos' })
   cpf: string;
 
-  @ApiProperty({ example: 'joao@email.com' })
+  @ApiProperty({ example: 'joao@email.com', description: 'E-mail permanente. Domínios temporários/descartáveis (ex.: mailinator.com, yopmail.com) são recusados.' })
   @IsEmail({}, { message: 'E-mail inválido' })
+  @IsNotDisposableEmail()
   email: string;
 
   @ApiProperty({ example: 'Senha@123', description: 'Mínimo 8 caracteres, 1 maiúscula, 1 número, 1 especial' })

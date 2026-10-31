@@ -15,6 +15,8 @@ import { AnimalsService } from '../src/animals/animals.service';
 import { RolesGuard } from '../src/common/guards/roles.guard';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { esc } from '../src/mail/mail.service';
+import { isDisposableEmail } from '../src/common/disposable-email';
+import { DISPOSABLE_DOMAINS_COUNT } from '../src/common/disposable-domains.generated';
 
 process.env.JWT_ACCESS_SECRET = 'test-access-secret';
 process.env.JWT_REFRESH_SECRET = 'test-refresh-secret';
@@ -216,4 +218,14 @@ test('staff image fields accept URL or files, never both', () => {
   assert.deepEqual(toStringArray({ value: 'https://x/a.jpg' }), ['https://x/a.jpg']);
   assert.deepEqual(toStringArray({ value: '["https://x/a.jpg","https://x/b.jpg"]' }), ['https://x/a.jpg', 'https://x/b.jpg']);
   assert.deepEqual(toStringArray({ value: ['a'] }), ['a']);
+});
+
+test('disposable e-mail domains are detected, including subdomains; real providers pass', () => {
+  assert.ok(DISPOSABLE_DOMAINS_COUNT > 5000);
+  for (const e of ['a@mailinator.com', 'a@YOPMAIL.COM', 'a@guerrillamail.com', 'a@10minutemail.com', 'a@x.mailinator.com', 'a@mailinator.com.']) {
+    assert.equal(isDisposableEmail(e), true, e);
+  }
+  for (const e of ['a@gmail.com', 'a@outlook.com', 'a@hotmail.com', 'a@uol.com.br', 'a@bol.com.br', 'a@apasbac.org.br', 'a@com', 'sem-arroba']) {
+    assert.equal(isDisposableEmail(e), false, e);
+  }
 });

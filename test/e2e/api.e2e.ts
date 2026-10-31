@@ -97,6 +97,9 @@ describe('authentication', () => {
     assert.equal(r.body.data.user.role, 'USER');
     assert.ok(r.body.data.accessToken && r.body.data.refreshToken);
     assert.equal((await call('POST', '/api/v1/auth/register', { body })).status, 400);
+    const temp = await call('POST', '/api/v1/auth/register', { body: { ...body, email: 'fulano@yopmail.com', cpf: '55566677788' } });
+    assert.equal(temp.status, 400, 'disposable e-mail');
+    assert.match(JSON.stringify(temp.body.message), /descartáveis/);
     assert.equal((await call('POST', '/api/v1/auth/register', { body: { ...body, email: 'x@e2e.test', cpf: '11122233344', role: 'ADMIN' } })).status, 400, 'mass assignment of role');
   });
 

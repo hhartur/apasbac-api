@@ -6788,7 +6788,8 @@
           },
           "email": {
             "type": "string",
-            "example": "joao@email.com"
+            "example": "joao@email.com",
+            "description": "E-mail permanente. Domínios temporários/descartáveis (ex.: mailinator.com, yopmail.com) são recusados."
           },
           "password": {
             "type": "string",

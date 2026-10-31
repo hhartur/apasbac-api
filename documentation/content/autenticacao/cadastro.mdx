@@ -12,7 +12,7 @@ description: Criação de conta com POST /auth/register.
 | `fullName` | 3 a 100 caracteres |
 | `phone` | Obrigatório, texto livre (ex.: `+55 44 99999-9999`) |
 | `cpf` | Exatamente 11 dígitos, sem pontos ou traço; único |
-| `email` | E-mail válido; único |
+| `email` | E-mail válido e único; domínios temporários/descartáveis são recusados |
 | `password` | Mínimo 8 caracteres, com ao menos 1 maiúscula, 1 número e 1 caractere especial entre `@ $ ! % * ? &` |
 | `confirmPassword` | Igual a `password` (não é armazenado) |
 
@@ -35,8 +35,12 @@ Resposta `201`: `data.user` (sem senha), `data.accessToken`, `data.refreshToken`
 
 | Status | Motivo |
 | --- | --- |
-| `400` | Campo inválido, senhas diferentes, campo extra (como `role`) ou "E-mail ou CPF já cadastrado" |
+| `400` | Campo inválido, senhas diferentes, campo extra (como `role`), "E-mail ou CPF já cadastrado" ou "E-mails temporários ou descartáveis não são aceitos" |
 | `429` | Mais de 5 cadastros por minuto do mesmo IP |
+
+## E-mails temporários
+
+O cadastro recusa e-mails de provedores temporários ou descartáveis (como `mailinator.com`, `yopmail.com`, `guerrillamail.com`), incluindo subdomínios deles. A verificação usa a lista comunitária [disposable-email-domains](https://github.com/disposable-email-domains/disposable-email-domains) (mais de 10 mil domínios), embutida na API e atualizada com `npm run disposable:update`.
 
 <Callout type="security">
 Não é possível escolher a role no cadastro: enviar `role` retorna `400`. Promoções são feitas por um ADMIN em <Endpoint method="PATCH" path="/users/{id}/role" />.
