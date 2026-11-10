@@ -18,7 +18,7 @@ CREATE TABLE "event_categories" (
 );
 
 -- CreateTable
-CREATE TABLE "events" (
+CREATE TABLE "apasbac_events" (
     "id" SERIAL NOT NULL,
     "uuid" TEXT NOT NULL,
     "title" TEXT NOT NULL,
@@ -45,7 +45,7 @@ CREATE TABLE "events" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "categoryId" INTEGER NOT NULL,
 
-    CONSTRAINT "events_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "apasbac_events_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -74,13 +74,13 @@ CREATE UNIQUE INDEX "event_categories_name_key" ON "event_categories"("name");
 CREATE UNIQUE INDEX "event_categories_slug_key" ON "event_categories"("slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "events_uuid_key" ON "events"("uuid");
+CREATE UNIQUE INDEX "apasbac_events_uuid_key" ON "apasbac_events"("uuid");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "events_slug_key" ON "events"("slug");
+CREATE UNIQUE INDEX "apasbac_events_slug_key" ON "apasbac_events"("slug");
 
 -- CreateIndex
-CREATE INDEX "events_status_startsAt_idx" ON "events"("status", "startsAt");
+CREATE INDEX "apasbac_events_status_startsAt_idx" ON "apasbac_events"("status", "startsAt");
 
 -- CreateIndex
 CREATE INDEX "audit_logs_createdAt_idx" ON "audit_logs"("createdAt");
@@ -101,7 +101,7 @@ CREATE INDEX "audit_logs_requestId_idx" ON "audit_logs"("requestId");
 CREATE INDEX "refresh_tokens_familyId_idx" ON "refresh_tokens"("familyId");
 
 -- AddForeignKey
-ALTER TABLE "events" ADD CONSTRAINT "events_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "event_categories"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "apasbac_events" ADD CONSTRAINT "apasbac_events_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "event_categories"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 
 -- Audit logs are append-only: block UPDATE and DELETE at database level.

@@ -187,7 +187,8 @@ model Event {
   categoryId Int
 
   @@index([status, startsAt])
-  @@map("events")
+  // "events" já existe no banco de produção com outro formato (criada fora da API); não reutilizar esse nome.
+  @@map("apasbac_events")
 }
 
 // Somente inserção: um trigger no banco bloqueia UPDATE e DELETE (ver migration 20261030000000_platform).
