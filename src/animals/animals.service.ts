@@ -33,7 +33,7 @@ export class AnimalsService {
 
     const animal = await this.prisma.animal.create({
       data: {
-        name: dto.name, description: dto.description, breed: dto.breed,
+        name: dto.name, description: dto.description, species: dto.species, breed: dto.breed,
         sex: dto.sex, size: dto.size, vaccines: dto.vaccines,
         temperament: dto.temperament, escapeTendency: dto.escapeTendency,
         isAdopted: dto?.isAdopted || false,
@@ -103,6 +103,7 @@ export class AnimalsService {
       id: animal.id,
       name: animal.name,
       description: animal.description,
+      species: animal.species,
       breed: animal.breed,
       sex: animal.sex,
       size: animal.size,
@@ -125,7 +126,7 @@ export class AnimalsService {
     const animal = await this.prisma.animal.findUnique({ where: { id } });
     if (!animal) throw new NotFoundException('Animal não encontrado');
     return {
-      name: animal.name, description: animal.description, breed: animal.breed,
+      name: animal.name, description: animal.description, species: animal.species, breed: animal.breed,
       sex: animal.sex, size: animal.size, vaccines: animal.vaccines,
       temperament: animal.temperament, escapeTendency: animal.escapeTendency,
       isAdopted: animal.isAdopted, photos: animal.photos,

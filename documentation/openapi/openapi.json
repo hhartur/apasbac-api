@@ -6990,6 +6990,11 @@
           "description": {
             "type": "string"
           },
+          "species": {
+            "type": "string",
+            "example": "Cachorro",
+            "description": "Espécie do animal (ex.: Cachorro, Gato)"
+          },
           "breed": {
             "type": "string"
           },
@@ -7050,6 +7055,7 @@
         "required": [
           "name",
           "description",
+          "species",
           "breed",
           "sex",
           "size",
@@ -7071,6 +7077,11 @@
           },
           "description": {
             "type": "string"
+          },
+          "species": {
+            "type": "string",
+            "example": "Cachorro",
+            "description": "Espécie do animal (ex.: Cachorro, Gato)"
           },
           "breed": {
             "type": "string"
@@ -7117,6 +7128,7 @@
         "required": [
           "name",
           "description",
+          "species",
           "breed",
           "sex",
           "size",
@@ -7167,6 +7179,11 @@
           },
           "description": {
             "type": "string"
+          },
+          "species": {
+            "type": "string",
+            "example": "Cachorro",
+            "description": "Espécie do animal (ex.: Cachorro, Gato)"
           },
           "breed": {
             "type": "string",
@@ -7247,6 +7264,7 @@
           "id",
           "name",
           "description",
+          "species",
           "breed",
           "sex",
           "size",
@@ -7269,6 +7287,11 @@
           "description": {
             "type": "string",
             "example": "Resgatado na rua, dócil e saudável."
+          },
+          "species": {
+            "type": "string",
+            "example": "Cachorro",
+            "description": "Espécie do animal (ex.: Cachorro, Gato)"
           },
           "breed": {
             "type": "string",
@@ -7331,6 +7354,7 @@
         "required": [
           "name",
           "description",
+          "species",
           "breed",
           "sex",
           "size",
@@ -7347,6 +7371,11 @@
           },
           "description": {
             "type": "string"
+          },
+          "species": {
+            "type": "string",
+            "example": "Cachorro",
+            "description": "Espécie do animal (ex.: Cachorro, Gato)"
           },
           "breed": {
             "type": "string"

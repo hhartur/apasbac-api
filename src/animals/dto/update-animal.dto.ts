@@ -7,6 +7,7 @@ import { AnimalSex, AnimalSize } from '../../common/enums';
 export class UpdateAnimalDto {
   @ApiPropertyOptional() @IsOptional() @IsString() name?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() description?: string;
+  @ApiPropertyOptional({ example: 'Cachorro', description: 'Espécie do animal (ex.: Cachorro, Gato)' }) @IsOptional() @IsString() species?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() breed?: string;
   @ApiPropertyOptional({ enum: AnimalSex }) @IsOptional() @IsEnum(AnimalSex) sex?: AnimalSex;
   @ApiPropertyOptional({ enum: AnimalSize }) @IsOptional() @IsEnum(AnimalSize) size?: AnimalSize;

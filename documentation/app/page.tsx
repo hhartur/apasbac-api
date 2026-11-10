@@ -14,7 +14,7 @@ const QUICK = {
 const { data } = await res.json();
 
 for (const animal of data.data) {
-  console.log(animal.name, animal.breed, animal.size);
+  console.log(animal.name, animal.species, animal.breed, animal.size);
 }`,
   py: `import requests
 
@@ -24,7 +24,7 @@ r = requests.get(
     timeout=15,
 )
 for animal in r.json()["data"]["data"]:
-    print(animal["name"], animal["breed"], animal["size"])`,
+    print(animal["name"], animal["species"], animal["breed"], animal["size"])`,
 };
 
 const RESPONSE = `{
@@ -34,6 +34,7 @@ const RESPONSE = `{
       {
         "id": 11,
         "name": "Leão",
+        "species": "Cachorro",
         "breed": "Vira-Lata",
         "sex": "MALE",
         "size": "LARGE",

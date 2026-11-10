@@ -42,7 +42,7 @@ export function AnimaisParaAdocao() {
         <li key={a.id}>
           {a.photos[0] && <img src={a.photos[0]} alt={`Foto de ${a.name}`} loading="lazy" />}
           <h3>{a.name}</h3>
-          <p>{a.breed}</p>
+          <p>{a.species} · {a.breed}</p>
         </li>
       ))}
     </ul>

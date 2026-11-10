@@ -31,7 +31,7 @@ export class MonitorService {
 
     return this.prisma.monitoring.create({
       data: { userId: dto.tutorId, animalId: dto.animalId, notes: dto.notes, dueDate, status: MonitoringStatus.PENDING },
-      include: { user: { select: { fullName: true, email: true } }, animal: { select: { name: true, breed: true } } },
+      include: { user: { select: { fullName: true, email: true } }, animal: { select: { name: true, species: true, breed: true } } },
     });
   }
 
@@ -98,7 +98,7 @@ export class MonitorService {
     const updated = await this.prisma.monitoring.update({
       where: { id },
       data: { status, notes: dto.notes, reviewedAt: new Date() },
-      include: { user: { select: { fullName: true, email: true } }, animal: { select: { name: true, breed: true } } },
+      include: { user: { select: { fullName: true, email: true } }, animal: { select: { name: true, species: true, breed: true } } },
     });
 
     await this.mail.sendMonitoringResult(
@@ -121,7 +121,7 @@ export class MonitorService {
     const [data, total] = await Promise.all([
       this.prisma.monitoring.findMany({
         skip, take: limit, where, orderBy: { createdAt: 'desc' },
-        include: { user: { select: { id: true, fullName: true, email: true } }, animal: { select: { id: true, name: true, breed: true } } },
+        include: { user: { select: { id: true, fullName: true, email: true } }, animal: { select: { id: true, name: true, species: true, breed: true } } },
       }),
       this.prisma.monitoring.count({ where }),
     ]);
@@ -135,7 +135,7 @@ export class MonitorService {
     const [items, total] = await Promise.all([
       this.prisma.monitoring.findMany({
         skip, take: limit, where: { userId }, orderBy: { createdAt: 'desc' },
-        include: { animal: { select: { id: true, name: true, breed: true } } },
+        include: { animal: { select: { id: true, name: true, species: true, breed: true } } },
       }),
       this.prisma.monitoring.count({ where: { userId } }),
     ]);
@@ -149,7 +149,7 @@ export class MonitorService {
       where: { id },
       include: {
         user: { select: { id: true, fullName: true, email: true, phone: true } },
-        animal: { select: { id: true, name: true, breed: true } },
+        animal: { select: { id: true, name: true, species: true, breed: true } },
       },
     });
     if (!m) throw new NotFoundException('Monitoramento não encontrado');

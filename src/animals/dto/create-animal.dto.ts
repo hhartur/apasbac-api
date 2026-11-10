@@ -35,6 +35,11 @@ export class CreateAnimalDto {
   @IsNotEmpty()
   description: string;
 
+  @ApiProperty({ example: 'Cachorro', description: 'Espécie do animal (ex.: Cachorro, Gato)' })
+  @IsString()
+  @IsNotEmpty()
+  species: string;
+
   @ApiProperty({ example: 'Vira-Lata' })
   @IsString()
   @IsNotEmpty()
