@@ -80,4 +80,50 @@ export class AuditService {
   findOne(id: string) {
     return this.prisma.auditLog.findUniqueOrThrow({ where: { id } });
   }
+
+  // Actions that represent a security-relevant event, surfaced in the monitoring overview.
+  static readonly SECURITY_ACTIONS = [
+    'AUTH_LOGIN_FAILED',
+    'AUTH_REFRESH_REUSE_DETECTED',
+    'AUTH_PASSWORD_RESET_REQUESTED',
+    'HTTP_FORBIDDEN',
+    'HTTP_RATE_LIMITED',
+    'HTTP_SERVER_ERROR',
+  ];
+
+  /**
+   * Aggregated view of the recent security activity for monitoring/dashboards (Admin only).
+   * Returns, for the last `hours`: total failures, a count per security action and the IPs with the
+   * most failed/denied requests. Built from the append-only audit table — no personal data exposed.
+   */
+  async securityOverview(hours = 24) {
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+    const window = { createdAt: { gte: since } };
+    const [byActionRows, topIpRows, totalFailures] = await Promise.all([
+      this.prisma.auditLog.groupBy({
+        by: ['action'],
+        where: { ...window, action: { in: AuditService.SECURITY_ACTIONS } },
+        _count: { _all: true },
+      }),
+      this.prisma.auditLog.groupBy({
+        by: ['ipAddress'],
+        where: { ...window, outcome: 'FAILURE', ipAddress: { not: null } },
+        _count: { _all: true },
+        orderBy: { _count: { ipAddress: 'desc' } },
+        take: 10,
+      }),
+      this.prisma.auditLog.count({ where: { ...window, outcome: 'FAILURE' } }),
+    ]);
+    const byAction: Record<string, number> = {};
+    for (const action of AuditService.SECURITY_ACTIONS) byAction[action] = 0;
+    for (const row of byActionRows) byAction[row.action] = row._count._all;
+    return {
+      windowHours: hours,
+      from: since.toISOString(),
+      to: new Date().toISOString(),
+      totalFailures,
+      byAction,
+      topFailingIps: topIpRows.map((r) => ({ ip: r.ipAddress, count: r._count._all })),
+    };
+  }
 }

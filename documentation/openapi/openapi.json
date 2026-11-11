@@ -4408,6 +4408,101 @@
         "x-public": false
       }
     },
+    "/api/v1/admin/audit-logs/security/overview": {
+      "get": {
+        "operationId": "AuditController_securityOverview",
+        "summary": "Resumo de eventos de segurança recentes (Admin)",
+        "description": "Monitoramento: total de falhas, contagem por ação de segurança (logins falhos, reuso de refresh, 403, 429, 500) e os IPs com mais falhas, na janela informada. Somente leitura; nenhum dado pessoal é exposto.",
+        "parameters": [
+          {
+            "name": "hours",
+            "required": false,
+            "in": "query",
+            "description": "Janela em horas (1–720, padrão 24)",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "Requisição inválida (validação do corpo, parâmetros ou query)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente, inválido ou expirado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Autenticado, mas sem permissão (role ou dono do recurso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "App Android desatualizado (somente com X-App-Platform: android)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de requisições excedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Audit"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "x-public": false
+      }
+    },
     "/api/v1/admin/audit-logs/{id}": {
       "get": {
         "operationId": "AuditController_findOne",

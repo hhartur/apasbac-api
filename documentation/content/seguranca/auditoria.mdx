@@ -14,6 +14,9 @@ description: O que é registrado, como consultar e as garantias de integridade.
 | Configurações | `CONFIG_CREATE`, `CONFIG_UPDATE`, `CONFIG_DELETE` |
 | Eventos | `EVENT_CREATE`, `EVENT_UPDATE`, `EVENT_DELETE`, `EVENT_IMAGE_UPLOAD`, `EVENT_IMAGE_DELETE`, `EVENT_GALLERY_ADD`, `EVENT_GALLERY_REMOVE`, `EVENT_CATEGORY_CREATE`, `EVENT_CATEGORY_UPDATE`, `EVENT_CATEGORY_DELETE` |
 | Mídias | `UPLOAD_SIGNATURE_ISSUED` |
+| Segurança (HTTP) | `HTTP_FORBIDDEN` (403), `HTTP_RATE_LIMITED` (429), `HTTP_SERVER_ERROR` (500) |
+
+Os eventos de segurança (HTTP) são gravados com `outcome: FAILURE` para qualquer requisição negada por permissão, bloqueada pelo rate limiting ou que resulte em erro do servidor — inclusive as recusadas por um _guard_ antes de chegar ao controller.
 
 ## Conteúdo de um registro
 
@@ -31,6 +34,36 @@ description: O que é registrado, como consultar e as garantias de integridade.
 ```bash
 curl "https://apasbac-api.vercel.app/api/v1/admin/audit-logs?action=AUTH_LOGIN_FAILED&from=2026-10-01T00:00:00Z" \
   -H "Authorization: Bearer $APASBAC_ADMIN_TOKEN"
+```
+
+## Log de acesso (HTTP)
+
+Toda requisição à API gera uma linha de log estruturada (JSON), separada da auditoria no banco, para o _drain_ de logs da aplicação:
+
+```json
+{ "requestId": "…", "method": "POST", "path": "/api/v1/animals", "status": 201, "durationMs": 42, "actorId": "…", "actorRole": "ADMIN", "ip": "203.0.113.10" }
+```
+
+O nível acompanha o status (`2xx/3xx` → info, `4xx` → warn, `5xx` → error). **Nunca** são registrados corpo, _query string_, cabeçalhos, tokens, senha, CPF, e-mail ou telefone — apenas metadados de roteamento e resultado.
+
+## Resumo de segurança (monitoramento)
+
+<Endpoint method="GET" path="/admin/audit-logs/security/overview" /> (ADMIN) agrega os eventos de segurança de uma janela recente para dashboards: total de falhas, contagem por ação de segurança e os IPs com mais falhas.
+
+```bash
+curl "https://apasbac-api.vercel.app/api/v1/admin/audit-logs/security/overview?hours=24" \
+  -H "Authorization: Bearer $APASBAC_ADMIN_TOKEN"
+```
+
+```json
+{
+  "windowHours": 24,
+  "from": "2026-11-10T12:00:00.000Z",
+  "to": "2026-11-11T12:00:00.000Z",
+  "totalFailures": 12,
+  "byAction": { "AUTH_LOGIN_FAILED": 7, "HTTP_FORBIDDEN": 3, "HTTP_RATE_LIMITED": 2, "HTTP_SERVER_ERROR": 0, "AUTH_REFRESH_REUSE_DETECTED": 0, "AUTH_PASSWORD_RESET_REQUESTED": 0 },
+  "topFailingIps": [{ "ip": "203.0.113.9", "count": 9 }]
+}
 ```
 
 <Callout type="info" title="Retenção">
