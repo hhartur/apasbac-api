@@ -7386,7 +7386,7 @@
           "species": {
             "type": "string",
             "example": "Cachorro",
-            "description": "Espécie do animal (ex.: Cachorro, Gato)"
+            "description": "Espécie do animal (ex.: Cachorro, Gato). Padrão \"Não informada\" quando omitido."
           },
           "breed": {
             "type": "string",
@@ -7449,7 +7449,6 @@
         "required": [
           "name",
           "description",
-          "species",
           "breed",
           "sex",
           "size",

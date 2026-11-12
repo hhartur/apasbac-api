@@ -33,7 +33,9 @@ export class AnimalsService {
 
     const animal = await this.prisma.animal.create({
       data: {
-        name: dto.name, description: dto.description, species: dto.species, breed: dto.breed,
+        name: dto.name, description: dto.description,
+        // species é opcional no contrato (compatível com clientes antigos); default igual ao backfill da migration.
+        species: dto.species?.trim() || 'Não informada', breed: dto.breed,
         sex: dto.sex, size: dto.size, vaccines: dto.vaccines,
         temperament: dto.temperament, escapeTendency: dto.escapeTendency,
         isAdopted: dto?.isAdopted || false,
