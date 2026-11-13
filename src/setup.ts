@@ -4,6 +4,8 @@ import helmet from 'helmet';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { requestId } from './common/request-context';
+import { httpLogger } from './common/http-logger';
+import { AuditService } from './audit/audit.service';
 import { ErrorResponse } from './common/dto/responses';
 import { CLASS_ROLES } from './common/decorators/roles.decorator';
 
@@ -26,6 +28,12 @@ export function configureApp(app: INestApplication) {
   // Real client IP behind the hosting proxy (rate limiting and audit).
   (app.getHttpAdapter().getInstance() as any).set('trust proxy', 1);
   app.use(requestId);
+  // Structured access log for every API request + security trail (403/429/500) in the audit table.
+  // Registered before the Nest guards so it also sees guard-rejected requests (401/403/429).
+  // Resolved leniently: during the OpenAPI preview build the providers are stubs, and the middleware
+  // never runs there anyway (no requests are served).
+  const audit = app.get(AuditService, { strict: false });
+  if (audit) app.use(httpLogger(audit));
   // CSP matches the static Developer Platform served from public/ (Next export needs inline scripts/styles).
   app.use(helmet({ contentSecurityPolicy: { directives: {
     defaultSrc: ["'self'"], scriptSrc: ["'self'", "'unsafe-inline'"], styleSrc: ["'self'", "'unsafe-inline'"],

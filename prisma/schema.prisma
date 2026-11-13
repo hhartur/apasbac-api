@@ -90,6 +90,7 @@ model Animal {
   uuid           String    @unique @default(uuid())
   name           String
   description    String
+  species        String
   breed          String
   sex            AnimalSex
   size           AnimalSize

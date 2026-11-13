@@ -18,7 +18,7 @@ export interface User { id: string; fullName: string; email: string; phone: stri
 export interface Session { user: User; accessToken: string; refreshToken: string }
 
 export interface Animal {
-  id: number; uuid?: string; name: string; description: string; breed: string;
+  id: number; uuid?: string; name: string; description: string; species: string; breed: string;
   sex: 'MALE' | 'FEMALE'; size: 'SMALL' | 'MEDIUM' | 'LARGE' | 'EXTRA_LARGE';
   vaccines: string[]; temperament: string; escapeTendency: boolean; photos: string[];
   isAdopted: boolean; createdAt: string; updatedAt: string;

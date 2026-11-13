@@ -52,6 +52,7 @@ export class AnimalResponse {
   uuid?: string;
   @ApiProperty({ example: 'Leão' }) name: string;
   @ApiProperty() description: string;
+  @ApiProperty({ example: 'Cachorro', description: 'Espécie do animal (ex.: Cachorro, Gato)' }) species: string;
   @ApiProperty({ example: 'Vira-Lata' }) breed: string;
   @ApiProperty({ enum: AnimalSex }) sex: AnimalSex;
   @ApiProperty({ enum: AnimalSize }) size: AnimalSize;
@@ -70,6 +71,7 @@ export class AnimalResponse {
 export class PublicAnimalResponse {
   @ApiProperty() name: string;
   @ApiProperty() description: string;
+  @ApiProperty({ example: 'Cachorro', description: 'Espécie do animal (ex.: Cachorro, Gato)' }) species: string;
   @ApiProperty() breed: string;
   @ApiProperty({ enum: AnimalSex }) sex: AnimalSex;
   @ApiProperty({ enum: AnimalSize }) size: AnimalSize;

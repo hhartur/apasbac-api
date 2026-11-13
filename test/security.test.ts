@@ -5,7 +5,8 @@ import { ExecutionContext, HttpException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
-import { sanitizeMetadata } from '../src/audit/audit.service';
+import { sanitizeMetadata, AuditService } from '../src/audit/audit.service';
+import { httpLogger, accessLine } from '../src/common/http-logger';
 import { assertImages, detectImageType, imageSource, toStringArray } from '../src/common/uploads';
 import { StorageService } from '../src/storage/storage.service';
 import { slugify } from '../src/events/events.service';
@@ -228,4 +229,54 @@ test('disposable e-mail domains are detected, including subdomains; real provide
   for (const e of ['a@gmail.com', 'a@outlook.com', 'a@hotmail.com', 'a@uol.com.br', 'a@bol.com.br', 'a@apasbac.org.br', 'a@com', 'sem-arroba']) {
     assert.equal(isDisposableEmail(e), false, e);
   }
+});
+
+test('access log line carries only routing data — never body, query string or PII', () => {
+  const line = accessLine(
+    { requestId: 'r1', method: 'POST', originalUrl: '/api/v1/auth/login?email=a@b.com',
+      user: { id: 'u1', role: 'ADMIN' }, ip: '203.0.113.1', body: { password: 'secret', email: 'a@b.com' } },
+    200, 12,
+  );
+  assert.equal(line.path, '/api/v1/auth/login'); // query string dropped
+  assert.equal(line.actorId, 'u1');
+  assert.equal(line.actorRole, 'ADMIN');
+  const text = JSON.stringify(line);
+  for (const leak of ['secret', 'a@b.com', 'password', 'email']) assert.ok(!text.includes(leak), leak);
+});
+
+test('http logger audits denied/throttled/failed requests, skips ok, 401 and non-API paths', () => {
+  const records: any[] = [];
+  const audit = { record: async (e: any) => { records.push(e); } } as unknown as AuditService;
+  const run = (url: string, status: number, user?: any) => {
+    let finish = () => {};
+    const req: any = { originalUrl: url, method: 'GET', ip: '203.0.113.9', requestId: 'r', user, headers: {} };
+    const res: any = { statusCode: status, on: (ev: string, cb: () => void) => { if (ev === 'finish') finish = cb; } };
+    httpLogger(audit)(req, res, () => {});
+    finish();
+  };
+  run('/api/v1/users/1', 403, { id: 'u1', role: 'USER' }); // privilege escalation attempt
+  run('/api/v1/animals', 429);                              // rate limited
+  run('/api/v1/events', 500);                               // server error
+  run('/api/v1/animals', 200);                              // ok -> not audited
+  run('/api/v1/auth/login', 401);                           // recorded by the auth service, not here
+  run('/docs', 403);                                        // non-API -> skipped entirely
+  assert.deepEqual(records.map((r) => r.action), ['HTTP_FORBIDDEN', 'HTTP_RATE_LIMITED', 'HTTP_SERVER_ERROR']);
+  assert.equal(records[0].actorId, 'u1');
+  assert.ok(records.every((r) => r.outcome === 'FAILURE' && r.resource === 'http'));
+});
+
+test('security overview aggregates failures by action and the top failing IPs', async () => {
+  const prisma: any = { auditLog: {
+    groupBy: async (args: any) => (args.by[0] === 'action'
+      ? [{ action: 'HTTP_FORBIDDEN', _count: { _all: 3 } }, { action: 'AUTH_LOGIN_FAILED', _count: { _all: 5 } }]
+      : [{ ipAddress: '203.0.113.9', _count: { _all: 7 } }]),
+    count: async () => 8,
+  } };
+  const o = await new AuditService(prisma).securityOverview(12);
+  assert.equal(o.windowHours, 12);
+  assert.equal(o.totalFailures, 8);
+  assert.equal(o.byAction.HTTP_FORBIDDEN, 3);
+  assert.equal(o.byAction.AUTH_LOGIN_FAILED, 5);
+  assert.equal(o.byAction.HTTP_SERVER_ERROR, 0); // present but zero when absent in the window
+  assert.deepEqual(o.topFailingIps, [{ ip: '203.0.113.9', count: 7 }]);
 });

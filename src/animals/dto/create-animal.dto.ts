@@ -35,6 +35,11 @@ export class CreateAnimalDto {
   @IsNotEmpty()
   description: string;
 
+  @ApiPropertyOptional({ example: 'Cachorro', description: 'Espécie do animal (ex.: Cachorro, Gato). Padrão "Não informada" quando omitido.' })
+  @IsOptional()
+  @IsString()
+  species?: string;
+
   @ApiProperty({ example: 'Vira-Lata' })
   @IsString()
   @IsNotEmpty()

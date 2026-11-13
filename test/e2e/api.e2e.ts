@@ -156,7 +156,7 @@ describe('authorization', () => {
   });
 
   test('public animal list hides QR uuid and adopter data', async () => {
-    await prisma.animal.create({ data: { name: 'Bolt', description: 'd', breed: 'SRD', sex: 'MALE', size: 'SMALL', vaccines: [], temperament: 't',
+    await prisma.animal.create({ data: { name: 'Bolt', description: 'd', species: 'Cachorro', breed: 'SRD', sex: 'MALE', size: 'SMALL', vaccines: [], temperament: 't',
       isAdopted: true, adoptedById: ids.tutor } });
     const anon = await call('GET', '/api/v1/animals');
     assert.equal(anon.status, 200);
@@ -251,7 +251,7 @@ describe('events', () => {
 
   test('animal photos: URL or files, never both', async () => {
     const jpeg = () => new Blob([JPEG], { type: 'image/jpeg' });
-    const animal = { name: 'Mel', description: 'd', breed: 'SRD', sex: 'FEMALE', size: 'SMALL', vaccines: 'V10', temperament: 't', escapeTendency: 'false' };
+    const animal = { name: 'Mel', description: 'd', species: 'Cachorro', breed: 'SRD', sex: 'FEMALE', size: 'SMALL', vaccines: 'V10', temperament: 't', escapeTendency: 'false' };
     const fields = () => { const f = new FormData(); for (const [k, v] of Object.entries(animal)) f.append(k, v); return f; };
 
     const both = fields(); both.append('photos', jpeg(), 'a.jpg'); both.append('photoUrls', 'https://img.example/a.jpg');
