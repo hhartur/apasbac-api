@@ -14,7 +14,7 @@
     "assets": "node scripts/build-assets.mjs"
   },
   "dependencies": {
-    "next": "^16.4.3",
+    "next": "^16.4.6",
     "next-mdx-remote": "^6.0.0",
     "qrcode": "^1.5.4",
     "react": "^19.3.1",
