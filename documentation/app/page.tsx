@@ -5,6 +5,7 @@ import { operations, opsByTag, TAGS, tags } from '@/lib/openapi';
 import { site } from '@/lib/site';
 import { ArrowRightIcon, BookIcon, CalendarIcon, GithubIcon, PawIcon, ShieldIcon, SparkIcon, TerminalIcon } from '@/components/icons';
 import { MethodBadge } from '@/components/ui';
+import { AppDownload } from '@/components/app-download';
 
 const QUICK = {
   curl: `curl "https://apasbac-api.vercel.app/api/v1/animals?isAdopted=false&limit=3"`,
@@ -88,6 +89,7 @@ export default async function Home() {
               </Link>
             </div>
             <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+              <li><a href="#baixar-app" className="font-semibold text-primary underline decoration-primary/40 underline-offset-4 hover:text-primary-hover">Baixar o app</a></li>
               <li><Link href="/docs/ia/como-uma-ia-deve-integrar" className="text-fg-2 underline decoration-line-strong underline-offset-4 hover:text-fg">Integração com IA</Link></li>
               <li><Link href="/docs/seguranca/boas-praticas" className="text-fg-2 underline decoration-line-strong underline-offset-4 hover:text-fg">Segurança</Link></li>
               <li><a href={site.github} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-fg-2 underline decoration-line-strong underline-offset-4 hover:text-fg"><GithubIcon width={14} height={14} />GitHub</a></li>
@@ -100,6 +102,8 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      <AppDownload />
 
       <section className="mx-auto max-w-[90rem] px-4 py-16 sm:px-6 lg:py-20" aria-labelledby="recursos">
         <div className="flex flex-wrap items-end justify-between gap-4">

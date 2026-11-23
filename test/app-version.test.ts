@@ -101,3 +101,18 @@ test('derived cache cannot be edited as a separate policy', async () => {
   await assert.rejects(config.update(UPDATE_CACHE_KEY, { value: '{}' }));
   await assert.rejects(config.remove(UPDATE_CACHE_KEY));
 });
+
+test('download redirects to the latest APK and is never cached', async () => {
+  const { AppVersionController } = await import('../src/app-version/app-version.controller');
+  const headers: Record<string, string> = {};
+  let redirected: [number, string] | undefined;
+  const res = { setHeader: (k: string, v: string) => { headers[k] = v; },
+    redirect: (status: number, url: string) => { redirected = [status, url]; } };
+  const latest = parseManifest(fixture());
+  await new AppVersionController({ latest: async () => latest } as unknown as AppVersionService).download(res as never);
+  assert.deepEqual(redirected, [302, fixture().apkUrl]);
+  assert.equal(headers['Cache-Control'], 'no-store');
+  await assert.rejects(
+    new AppVersionController({ latest: async () => undefined } as unknown as AppVersionService).download(res as never),
+    (e: HttpException) => e.getStatus() === 503);
+});

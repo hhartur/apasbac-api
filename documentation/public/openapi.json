@@ -4119,6 +4119,46 @@
         "x-public": true
       }
     },
+    "/api/v1/app/download": {
+      "get": {
+        "operationId": "AppVersionController_download",
+        "summary": "Baixar o aplicativo Android (sempre a versão mais recente)",
+        "description": "Endereço fixo para links e QR Codes: redireciona (302) para o APK da última versão publicada no manifesto do GitHub. O destino é sempre uma Release de APASBAC/apasbac-app (validado pelo manifesto).",
+        "parameters": [],
+        "responses": {
+          "302": {
+            "description": "Redireciona para o APK mais recente"
+          },
+          "429": {
+            "description": "Limite de requisições excedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Nenhuma versão publicada ainda ou GitHub indisponível sem cache"
+          }
+        },
+        "tags": [
+          "App version"
+        ],
+        "x-public": true
+      }
+    },
     "/api/v1/app/update-events": {
       "post": {
         "operationId": "AppVersionController_event",

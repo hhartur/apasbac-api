@@ -1,5 +1,6 @@
-import { Body, Controller, Get, HttpCode, Logger, Post, ServiceUnavailableException, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, Logger, Post, Res, ServiceUnavailableException, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { IsIn, IsInt, Max, Min } from 'class-validator';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../common/decorators/public.decorator';
@@ -29,6 +30,21 @@ export class AppVersionController {
     const manifest = await this.versions.latest();
     if (!manifest) throw new ServiceUnavailableException('Informações de atualização temporariamente indisponíveis.');
     return manifest;
+  }
+  @Public()
+  @Get('download')
+  @SkipAppVersion()
+  @ApiOperation({ summary: 'Baixar o aplicativo Android (sempre a versão mais recente)',
+    description: 'Endereço fixo para links e QR Codes: redireciona (302) para o APK da última versão publicada no ' +
+      'manifesto do GitHub. O destino é sempre uma Release de APASBAC/apasbac-app (validado pelo manifesto).' })
+  @ApiResponse({ status: 302, description: 'Redireciona para o APK mais recente' })
+  @ApiResponse({ status: 503, description: 'Nenhuma versão publicada ainda ou GitHub indisponível sem cache' })
+  async download(@Res() res: Response) {
+    const manifest = await this.versions.latest();
+    if (!manifest) throw new ServiceUnavailableException('Download temporariamente indisponível. Tente novamente em instantes.');
+    // Never cached: the next release must be served as soon as the manifest changes.
+    res.setHeader('Cache-Control', 'no-store');
+    res.redirect(302, manifest.apkUrl);
   }
   @Post('update-events')
   @HttpCode(204)

@@ -19,6 +19,16 @@ test('home: hero, official logo, CTAs and version', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('lang', 'pt-BR');
 });
 
+test('home: app download with QR Code and always-current link', async ({ page }) => {
+  await open(page, '/');
+  const section = page.locator('#baixar-app');
+  await expect(section.getByRole('heading', { level: 2 })).toHaveText('Baixe o app da APASBAC');
+  await expect(section.getByRole('link', { name: /Baixar para Android/ }))
+    .toHaveAttribute('href', 'https://apasbac-api.vercel.app/api/v1/app/download');
+  await expect(section.getByRole('img', { name: /QR Code para baixar/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Baixar o app' })).toHaveAttribute('href', '#baixar-app');
+});
+
 test('navigation: sidebar marks the current page and breadcrumbs follow', async ({ page }, info) => {
   test.skip(isMobile(info.project.name), 'sidebar is a drawer on mobile');
   await open(page, '/docs/inicio/introducao');
