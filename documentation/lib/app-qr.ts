@@ -15,23 +15,27 @@ export interface AppQr {
   version: number;
   /** Unidade do viewBox por módulo. */
   unit: number;
-  /** Lado total do viewBox, com margem. */
+  /** Lado total do QR no viewBox, com a margem branca. */
   viewBox: number;
-  /** Módulos de dados (fora dos olhos e da área da logo). */
+  /** Módulos escuros de dados (fora dos olhos e do selo central), em [linha, coluna]. */
   dots: Array<[number, number]>;
+  /** Pares de módulos vizinhos (direita/baixo) que viram uma forma contínua. */
+  bridges: Array<{ r: number; c: number; dir: 'right' | 'down' }>;
+  /** Blocos 2×2 totalmente escuros (canto superior esquerdo), preenchidos sem frestas. */
+  blocks: Array<[number, number]>;
   /** Cantos superiores esquerdos dos três "olhos" (em módulos). */
   eyes: Array<[number, number]>;
-  /** Área livre central para a logo (em unidades do viewBox). */
-  logo: { x: number; y: number; width: number; height: number };
-  /** Fração dos módulos removidos para a logo (deve ficar bem abaixo de 30%). */
+  /** Selo central (em unidades do viewBox). */
+  badge: { cx: number; cy: number; r: number };
+  /** Fração dos módulos cobertos pelo selo (deve ficar bem abaixo de 30%). */
   cleared: number;
 }
 
-const MARGIN = 3;
+export const QR_MARGIN = 3;
 
 /**
- * Monta um QR Code com correção de erro alta (H, recupera até 30%) e reserva
- * um espaço central para a logo, retirando só os módulos cobertos por ela.
+ * Monta o QR Code com correção de erro alta (H, recupera até 30%) e um espaço
+ * central quadrado para o selo com a patinha, removendo só os módulos cobertos.
  */
 export function buildAppQr(text: string = APP_DOWNLOAD_URL, unit = 10): AppQr {
   const qr = QRCode.create(text, { errorCorrectionLevel: 'H' });
@@ -40,26 +44,29 @@ export function buildAppQr(text: string = APP_DOWNLOAD_URL, unit = 10): AppQr {
   const inEye = (r: number, c: number) =>
     eyes.some(([er, ec]) => r >= er && r < er + 7 && c >= ec && c < ec + 7);
 
-  // Logo da APASBAC (proporção ~2:1) centralizada, com folga de 1 módulo.
-  const logoW = Math.round(size * 0.36) | 1;
-  const logoH = Math.round(size * 0.2) | 1;
-  const r0 = Math.floor((size - logoH) / 2), c0 = Math.floor((size - logoW) / 2);
-  const inLogo = (r: number, c: number) => r >= r0 && r < r0 + logoH && c >= c0 && c < c0 + logoW;
+  const side = Math.round(size * 0.27) | 1; // ímpar: fica exatamente no centro
+  const start = (size - side) / 2;
+  const inBadge = (r: number, c: number) => r >= start && r < start + side && c >= start && c < start + side;
+
+  const isDot = (r: number, c: number) =>
+    r >= 0 && c >= 0 && r < size && c < size && qr.modules.get(r, c) === 1 && !inEye(r, c) && !inBadge(r, c);
 
   const dots: Array<[number, number]> = [];
-  let removed = 0;
+  const bridges: AppQr['bridges'] = [];
+  const blocks: AppQr['blocks'] = [];
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
-      if (!qr.modules.get(r, c) || inEye(r, c)) continue;
-      if (inLogo(r, c)) { removed++; continue; }
+      if (!isDot(r, c)) continue;
       dots.push([r, c]);
+      if (isDot(r, c + 1)) bridges.push({ r, c, dir: 'right' });
+      if (isDot(r + 1, c)) bridges.push({ r, c, dir: 'down' });
+      if (isDot(r, c + 1) && isDot(r + 1, c) && isDot(r + 1, c + 1)) blocks.push([r, c]);
     }
   }
+  const center = (QR_MARGIN + size / 2) * unit;
   return {
-    size, version: qr.version, unit, viewBox: (size + MARGIN * 2) * unit, dots, eyes,
-    logo: { x: (c0 + MARGIN) * unit, y: (r0 + MARGIN) * unit, width: logoW * unit, height: logoH * unit },
-    cleared: (logoW * logoH) / (size * size),
+    size, version: qr.version, unit, viewBox: (size + QR_MARGIN * 2) * unit, dots, bridges, blocks, eyes,
+    badge: { cx: center, cy: center, r: (side / 2) * unit },
+    cleared: (side * side) / (size * size),
   };
 }
-
-export const QR_MARGIN = MARGIN;

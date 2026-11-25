@@ -1,4 +1,4 @@
-import { AppQrCode } from '@/components/app-qr-code';
+import { AppQrCode, PawMark } from '@/components/app-qr-code';
 import { AppVersionInfo } from '@/components/app-version-info';
 import { APP_DOWNLOAD_URL } from '@/lib/app-qr';
 
@@ -52,14 +52,17 @@ export function AppDownload() {
           </ol>
         </div>
 
-        <figure className="mx-auto w-full max-w-[20rem] lg:mx-0">
-          <div className="rounded-[1.75rem] border border-line bg-surface p-4 shadow-[0_20px_50px_-24px_rgba(139,26,26,0.45)]">
-            <a href={APP_DOWNLOAD_URL} aria-label="Baixar o aplicativo APASBAC" className="block">
-              <AppQrCode className="block h-auto w-full" />
-            </a>
-          </div>
-          <figcaption className="mt-4 text-center text-sm text-fg-2">
-            Aponte a câmera do celular para baixar
+        <figure className="relative mx-auto w-full max-w-[21rem] lg:mx-0">
+          {/* Patinhas decorativas, fora da área de leitura do QR. */}
+          <PawMark className="pointer-events-none absolute -left-7 top-20 h-7 w-7 -rotate-[24deg] text-primary/25" />
+          <PawMark className="pointer-events-none absolute -left-3 top-36 h-5 w-5 -rotate-[12deg] text-primary/20" />
+          <PawMark className="pointer-events-none absolute -right-6 bottom-28 h-7 w-7 rotate-[22deg] text-primary/25" />
+          <PawMark className="pointer-events-none absolute -right-2 bottom-14 h-5 w-5 rotate-[10deg] text-primary/20" />
+          <a href={APP_DOWNLOAD_URL} aria-label="Baixar o aplicativo APASBAC" className="block transition-transform duration-300 hover:-translate-y-1">
+            <AppQrCode className="block h-auto w-full" />
+          </a>
+          <figcaption className="mt-3 text-center text-sm text-fg-2">
+            <span className="font-semibold text-fg">Aponte a câmera e leve a gente com você</span>
             <a href={APP_DOWNLOAD_URL} className="mt-1 block break-all font-mono text-xs text-fg-3 underline decoration-line-strong underline-offset-4 hover:text-fg">
               {APP_DOWNLOAD_URL.replace(/^https:\/\//, '')}
             </a>

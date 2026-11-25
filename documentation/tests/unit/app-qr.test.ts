@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import jsQR from 'jsqr';
 import { APP_DOWNLOAD_URL, buildAppQr, QR_MARGIN } from '../../lib/app-qr';
 
-/** Rasteriza o QR como ele é desenhado (pontos, olhos e área da logo em branco) e lê com um decodificador real. */
+/** Rasteriza o QR como ele é desenhado (pontos, olhos e área do selo em branco) e lê com um decodificador real. */
 function decode(text: string): string | undefined {
   const qr = buildAppQr(text, 1);
   const scale = 8;
@@ -27,14 +27,14 @@ function decode(text: string): string | undefined {
   return jsQR(data, px, px)?.data;
 }
 
-test('QR do app aponta para o download fixo da API e continua legível com a logo', () => {
+test('QR do app aponta para o download fixo da API e continua legível com o selo', () => {
   assert.equal(APP_DOWNLOAD_URL, 'https://apasbac-api.vercel.app/api/v1/app/download');
   assert.equal(decode(APP_DOWNLOAD_URL), APP_DOWNLOAD_URL);
 });
 
-test('área da logo fica bem abaixo da capacidade de correção (30%)', () => {
+test('selo central fica bem abaixo da capacidade de correção (30%)', () => {
   const qr = buildAppQr();
-  assert.ok(qr.cleared < 0.1, `logo cobre ${(qr.cleared * 100).toFixed(1)}%`);
+  assert.ok(qr.cleared < 0.1, `selo cobre ${(qr.cleared * 100).toFixed(1)}%`);
   assert.ok(qr.version < 7, 'sem padrão de alinhamento no centro');
-  assert.ok(qr.logo.width > qr.logo.height);
+  assert.ok(qr.bridges.length > 0, 'módulos vizinhos viram traços contínuos');
 });
