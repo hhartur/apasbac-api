@@ -46,8 +46,7 @@ function Ear({ q, top, flip }: { q: number; top: number; flip?: boolean }) {
 
 /**
  * QR Code do aplicativo com tema de bichinho: orelhas de gatinho, módulos fluidos
- * em gradiente, "olhos" arredondados, selo com patinha no centro e plaquinha de
- * coleira. Os olhos e a margem branca seguem o padrão para qualquer câmera ler.
+ * em gradiente, "olhos" arredondados e selo com patinha no centro. Os olhos e a margem branca seguem o padrão para qualquer câmera ler.
  */
 export function AppQrCode({ className }: { className?: string }) {
   const qr = buildAppQr();
@@ -55,13 +54,13 @@ export function AppQrCode({ className }: { className?: string }) {
   const q = qr.viewBox;
   const earTop = 4;
   const top = 58; // espaço das orelhas acima do cartão
-  const tag = 58; // plaquinha abaixo do cartão
+  const bottom = 18; // espaço para a sombra do cartão
   const at = (n: number) => (n + QR_MARGIN) * u;
   const r = u * 0.5;
   const { badge } = qr;
   return (
     <svg
-      viewBox={`0 0 ${q} ${top + q + tag}`}
+      viewBox={`0 0 ${q} ${top + q + bottom}`}
       className={className}
       role="img"
       aria-label="QR Code para baixar o aplicativo APASBAC"
@@ -117,15 +116,6 @@ export function AppQrCode({ className }: { className?: string }) {
         <Paw cx={badge.cx} cy={badge.cy - u * 0.2} s={badge.r * 0.42} fill="#ffffff" />
       </g>
 
-      {/* Plaquinha de coleira em forma de coração. */}
-      <g transform={`translate(${q / 2} ${top + q + tag / 2 - 4})`}>
-        <line x1="0" y1={-tag / 2 - 2} x2="0" y2={-tag / 2 + 12} stroke={RED} strokeWidth="4" strokeLinecap="round" />
-        <path
-          d="M 0 20 C -30 0 -26 -20 -12 -20 C -5 -20 -1 -15 0 -11 C 1 -15 5 -20 12 -20 C 26 -20 30 0 0 20 Z"
-          fill="url(#qr-ink)"
-        />
-        <Paw cx={0} cy={-3} s={7.5} fill={CREAM} />
-      </g>
     </svg>
   );
 }
