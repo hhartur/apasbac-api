@@ -7,6 +7,12 @@ export class MessageResponse {
   @ApiProperty({ example: 'Operação realizada com sucesso' }) message: string;
 }
 
+export class CaptureSessionResponse {
+  @ApiProperty({ description: 'Token da sessão de captura, enviado de volta no submit.' }) captureToken: string;
+  @ApiProperty({ description: 'Chave temporária (hex) para assinar cada mídia gravada.' }) captureKey: string;
+  @ApiProperty({ format: 'date-time' }) expiresAt: string;
+}
+
 export class ErrorResponse {
   @ApiProperty({ example: false }) success: boolean;
   @ApiProperty({ example: 400 }) statusCode: number;

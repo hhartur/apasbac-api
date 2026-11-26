@@ -3,6 +3,13 @@ title: Changelog
 description: Histórico de versões da APASBAC API, do mais recente ao mais antigo.
 ---
 
+## Não lançado — 2026-11-26
+
+### SECURITY
+- **Atestado de captura no monitoramento**: `POST /monitoring/{id}/capture-session` devolve um token e uma chave temporária (24 h) ao tutor dono de um monitoramento pendente. O app assina cada foto e o vídeo no momento em que são gravados pela câmera (`HMAC-SHA256(captureKey, "kind|md5|capturedAt|monitoringId")`).
+- `POST /monitoring/{id}/submit` passa a exigir `captureToken` e `media` (um atestado por URL). A API confere a assinatura, se a captura aconteceu durante a sessão e se o MD5 bate com o arquivo guardado no Cloudinary (etag). Mídias da galeria, de outro app ou trocadas depois da captura são recusadas com `400`.
+- Envios antigos já aprovados ou em análise não mudam.
+
 ## 1.1.0 — 2026-10-31
 
 ### FEATURE

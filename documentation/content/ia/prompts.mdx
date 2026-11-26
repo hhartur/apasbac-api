@@ -41,7 +41,7 @@ armazene os contatos.
 Consulte DOCS/openapi.json (tag Monitor) e DOCS/docs/seguranca/upload-seguro. Para usuários TUTOR, liste
 GET /api/v1/monitoring/mine e permita enviar um monitoramento PENDING: obter assinatura em POST /api/v1/storage/signed-upload
 (pastas monitoring/images e monitoring/videos), enviar os arquivos ao Cloudinary sem o header Authorization da APASBAC e
-chamar POST /api/v1/monitoring/{id}/submit com as URLs. Trate 403 e 400.
+chamar POST /api/v1/monitoring/{id}/submit com as URLs, o captureToken e o atestado de cada mídia (POST /api/v1/monitoring/{id}/capture-session). Trate 403 e 400.
 ```
 
 ### Exibir eventos da APASBAC

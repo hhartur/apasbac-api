@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { SheetsService } from '../sheets/sheets.service';
@@ -8,6 +8,7 @@ import { CreateMonitoringDto } from './dto/create-monitoring.dto';
 import { ReviewMonitoringDto } from './dto/review-monitoring.dto';
 import { MonitoringStatus, Role } from '../common/enums';
 import { Monitoring } from '@prisma/client';
+import { CaptureError, CapturedMedia, issueCaptureSession, verifyCaptureToken, verifyMedia } from './capture-attestation';
 
 @Injectable()
 export class MonitorService {
@@ -43,9 +44,55 @@ export class MonitorService {
     return new Date(now.getTime() + value * (ms[unit] || 86400000));
   }
 
+  /** Sessão de captura: só o tutor dono do monitoramento pendente recebe a chave temporária. */
+  async captureSession(id: string, user: any) {
+    const monitoring = await this.prisma.monitoring.findUnique({ where: { id } });
+    if (!monitoring) throw new NotFoundException('Monitoramento não encontrado');
+    if (monitoring.userId !== user.id) throw new ForbiddenException('Acesso negado');
+    if (monitoring.status !== 'PENDING') throw new BadRequestException('Este monitoramento já foi enviado');
+    try {
+      return issueCaptureSession(id, user.id);
+    } catch (e) {
+      throw new ServiceUnavailableException((e as Error).message);
+    }
+  }
+
+  /** Cada URL enviada precisa de um atestado válido, e o arquivo no Cloudinary precisa ser o atestado. */
+  private async verifyCapture(id: string, user: any, dto: { videoUrl: string; imageUrls: string[]; captureToken?: string; media?: CapturedMedia[] }) {
+    const expected = [{ url: dto.videoUrl, kind: 'video' }, ...dto.imageUrls.map((url) => ({ url, kind: 'image' }))];
+    const urls = expected.map((e) => e.url);
+    if (new Set(urls).size !== urls.length) throw new BadRequestException('Fotos ou vídeo repetidos no envio');
+    const media = dto.media ?? [];
+    if (!dto.captureToken || media.length !== expected.length) {
+      throw new BadRequestException('Atualize o aplicativo: as fotos e o vídeo do monitoramento precisam ser gravados pela câmera do app.');
+    }
+    try {
+      const payload = verifyCaptureToken(dto.captureToken, id, user.id);
+      for (const e of expected) {
+        const m = media.find((x) => x.url === e.url);
+        if (!m || m.kind !== e.kind) throw new CaptureError('As fotos e o vídeo precisam ser gravados pela câmera do aplicativo.');
+        verifyMedia(m, dto.captureToken, payload);
+      }
+    } catch (e) {
+      if (e instanceof CaptureError) throw new BadRequestException(e.message);
+      throw e;
+    }
+    for (const m of media) {
+      let etag: string | null;
+      try {
+        etag = await this.storage.etagOf(m.url);
+      } catch {
+        throw new ServiceUnavailableException('Não foi possível conferir os arquivos enviados. Tente novamente em instantes.');
+      }
+      if (etag !== null && etag !== m.md5) {
+        throw new BadRequestException('Um dos arquivos enviados não é o que foi gravado pelo aplicativo.');
+      }
+    }
+  }
+
   async submitMonitoring(
     id: string,
-    dto: { videoUrl: string; imageUrls: string[] },
+    dto: { videoUrl: string; imageUrls: string[]; captureToken?: string; media?: CapturedMedia[] },
     user: any,
   ): Promise<Monitoring> {
     const monitoring = await this.prisma.monitoring.findUnique({
@@ -68,6 +115,8 @@ export class MonitorService {
     if (![dto.videoUrl, ...dto.imageUrls].every((url) => this.storage.isOwnedUrl(url))) {
       throw new BadRequestException('As mídias devem ser enviadas pelo upload direto da APASBAC (POST /storage/signed-upload)');
     }
+
+    await this.verifyCapture(id, user, dto);
 
     return this.prisma.monitoring.update({
       where: { id },

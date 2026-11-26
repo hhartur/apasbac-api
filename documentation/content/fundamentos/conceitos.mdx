@@ -21,5 +21,5 @@ description: Entidades da API e como elas se relacionam.
 1. A equipe cadastra o animal (`POST /animals`); o QR Code é gerado automaticamente.
 2. Na adoção, a equipe vincula o adotante (`POST /animals/:id/adopter`). Se ele era `USER`, passa a `TUTOR`.
 3. A equipe cria monitoramentos (`POST /monitoring`) com prazo calculado pela configuração do período.
-4. O tutor envia fotos e vídeo (`POST /monitoring/:id/submit`).
+4. O tutor grava fotos e vídeo pela câmera do app, que assina cada mídia com a chave da sessão de captura (`POST /monitoring/:id/capture-session`), e envia (`POST /monitoring/:id/submit`). Mídias sem atestado válido são recusadas.
 5. A equipe aprova ou rejeita (`PATCH /monitoring/:id/review`); o tutor recebe e-mail e as mídias são apagadas.

@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, UseInterceptors, UploadedFiles, Query, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, UseInterceptors, UploadedFiles, Query, Request, HttpCode } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiQuery } from '@nestjs/swagger';
 import { MonitorService } from './monitor.service';
@@ -13,7 +14,7 @@ import { memoryStorage } from 'multer';
 import { SubmitMonitoringDto } from './dto/submit-monitoring.dto';
 import { Audited } from '../audit/audit.interceptor';
 import { ApiEnvelope } from '../common/swagger';
-import { MessageResponse, MonitoringResponse } from '../common/dto/responses';
+import { CaptureSessionResponse, MessageResponse, MonitoringResponse } from '../common/dto/responses';
 
 @ApiTags('Monitor')
 @ApiBearerAuth('access-token')
@@ -31,12 +32,26 @@ export class MonitorController {
     return this.monitorService.create(dto);
   }
 
+  @Post(':id/capture-session')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Sessão de captura das fotos e do vídeo (tutor dono, monitoramento pendente)',
+    description: 'Devolve um token e uma chave temporária (24 h) para o app assinar cada foto e vídeo no momento em que ' +
+      'é gravado pela câmera: HMAC-SHA256(captureKey, "kind|md5|capturedAt|monitoringId"). O envio só é aceito com ' +
+      'esses atestados, e o MD5 é conferido com o arquivo guardado no Cloudinary.' })
+  @ApiEnvelope(CaptureSessionResponse)
+  captureSession(@Param('id') id: string, @Request() req) {
+    return this.monitorService.captureSession(id, req.user);
+  }
+
   @Post(':id/submit')
   @UseGuards(JwtAuthGuard)
   @Audited({ action: 'MONITORING_SUBMIT', resource: 'monitoring' })
   @ApiOperation({ summary: 'Tutor envia vídeo e imagens do monitoramento',
     description: 'Somente o usuário dono do monitoramento, com status PENDING. As URLs devem vir do upload direto ' +
-      '(POST /storage/signed-upload, pastas monitoring/videos e monitoring/images) e pertencer à conta Cloudinary da API.' })
+      '(POST /storage/signed-upload, pastas monitoring/videos e monitoring/images) e pertencer à conta Cloudinary da API. ' +
+      'Cada foto e o vídeo precisam de atestado de captura (captureToken + media), gerado pelo app ao gravar com a câmera.' })
   @ApiEnvelope(MonitoringResponse, { status: 201 })
   async submitMonitoring(
     @Param('id') id: string,

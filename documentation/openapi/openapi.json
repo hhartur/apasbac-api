@@ -3420,11 +3420,137 @@
         "x-public": false
       }
     },
+    "/api/v1/monitoring/{id}/capture-session": {
+      "post": {
+        "operationId": "MonitorController_captureSession",
+        "summary": "Sessão de captura das fotos e do vídeo (tutor dono, monitoramento pendente)",
+        "description": "Devolve um token e uma chave temporária (24 h) para o app assinar cada foto e vídeo no momento em que é gravado pela câmera: HMAC-SHA256(captureKey, \"kind|md5|capturedAt|monitoringId\"). O envio só é aceito com esses atestados, e o MD5 é conferido com o arquivo guardado no Cloudinary.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CaptureSessionResponse"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida (validação do corpo, parâmetros ou query)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente, inválido ou expirado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Autenticado, mas sem permissão (role ou dono do recurso)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "App Android desatualizado (somente com X-App-Platform: android)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de requisições excedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Monitor"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "x-public": false
+      }
+    },
     "/api/v1/monitoring/{id}/submit": {
       "post": {
         "operationId": "MonitorController_submitMonitoring",
         "summary": "Tutor envia vídeo e imagens do monitoramento",
-        "description": "Somente o usuário dono do monitoramento, com status PENDING. As URLs devem vir do upload direto (POST /storage/signed-upload, pastas monitoring/videos e monitoring/images) e pertencer à conta Cloudinary da API.",
+        "description": "Somente o usuário dono do monitoramento, com status PENDING. As URLs devem vir do upload direto (POST /storage/signed-upload, pastas monitoring/videos e monitoring/images) e pertencer à conta Cloudinary da API. Cada foto e o vídeo precisam de atestado de captura (captureToken + media), gerado pelo app ao gravar com a câmera.",
         "parameters": [
           {
             "name": "id",
@@ -7811,6 +7937,66 @@
           "tutorId"
         ]
       },
+      "CaptureSessionResponse": {
+        "type": "object",
+        "properties": {
+          "captureToken": {
+            "type": "string",
+            "description": "Token da sessão de captura, enviado de volta no submit."
+          },
+          "captureKey": {
+            "type": "string",
+            "description": "Chave temporária (hex) para assinar cada mídia gravada."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "captureToken",
+          "captureKey",
+          "expiresAt"
+        ]
+      },
+      "CapturedMediaDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL do arquivo enviado ao Cloudinary (deve ser uma das URLs do envio)."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ]
+          },
+          "md5": {
+            "type": "string",
+            "description": "MD5 (hex) do arquivo gravado; conferido com o etag do Cloudinary.",
+            "example": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          "capturedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Momento da captura pela câmera do app (UTC)."
+          },
+          "signature": {
+            "type": "string",
+            "description": "HMAC-SHA256(captureKey, \"kind|md5|capturedAt|monitoringId\") em hex."
+          }
+        },
+        "required": [
+          "url",
+          "kind",
+          "md5",
+          "capturedAt",
+          "signature"
+        ]
+      },
       "SubmitMonitoringDto": {
         "type": "object",
         "properties": {
@@ -7827,11 +8013,24 @@
               "type": "string",
               "format": "uri"
             }
+          },
+          "captureToken": {
+            "type": "string",
+            "description": "Token da sessão de captura (POST /monitoring/:id/capture-session)."
+          },
+          "media": {
+            "description": "Atestado de captura de cada foto e do vídeo.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CapturedMediaDto"
+            }
           }
         },
         "required": [
           "videoUrl",
-          "imageUrls"
+          "imageUrls",
+          "captureToken",
+          "media"
         ]
       },
       "ReviewMonitoringDto": {

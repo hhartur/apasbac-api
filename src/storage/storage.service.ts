@@ -61,6 +61,17 @@ export class StorageService {
     } catch { return false; }
   }
 
+  /**
+   * MD5 (etag) do arquivo guardado no Cloudinary, para conferir que o conteúdo é o
+   * mesmo que o app atestou. null quando o Cloudinary não está configurado (testes).
+   */
+  async etagOf(url: string): Promise<string | null> {
+    if (!process.env.CLOUDINARY_CLOUD_NAME) return null;
+    const { publicId, resourceType } = this.extractPublicIdAndType(url);
+    const resource = await cloudinary.api.resource(publicId, { resource_type: resourceType });
+    return String(resource?.etag ?? '').toLowerCase();
+  }
+
   async deleteMany(urls: string[]): Promise<void> {
     await Promise.all(urls.map((u) => this.delete(u)));
   }
