@@ -11,7 +11,7 @@ const DownloadIcon = () => (
 /** Seção "Baixe o aplicativo" da página inicial. */
 export function AppDownload() {
   return (
-    <section id="baixar-app" className="scroll-mt-20 border-b border-line bg-surface-2/50" aria-labelledby="baixar-app-titulo">
+    <section id="baixar-app" className="scroll-mt-20 overflow-x-clip border-b border-line bg-surface-2/50" aria-labelledby="baixar-app-titulo">
       <div className="mx-auto grid max-w-[90rem] items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.15fr_auto] lg:gap-16 lg:py-20">
         <div className="min-w-0">
           <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-xs text-fg-2">
