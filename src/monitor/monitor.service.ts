@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { SheetsService } from '../sheets/sheets.service';
@@ -12,6 +12,7 @@ import { CaptureError, CapturedMedia, expectedEtag, issueCaptureSession, verifyC
 
 @Injectable()
 export class MonitorService {
+  private readonly logger = new Logger(MonitorService.name);
   constructor(
     private prisma: PrismaService,
     private storage: StorageService,
@@ -87,9 +88,13 @@ export class MonitorService {
         throw new ServiceUnavailableException('Não foi possível conferir os arquivos enviados. Tente novamente em instantes.');
       }
       if (etag !== null && etag !== expectedEtags.get(m.url)) {
+        // Diagnóstico sem dados pessoais: só o começo dos hashes comparados.
+        const short = (v?: string | null) => (v ? v.slice(0, 8) : '—');
+        const detail = `(conferência: celular ${short(m.md5)}, upload ${short(m.uploadEtag)}, nuvem ${short(etag)})`;
+        this.logger.warn(`Atestado recusado ${m.kind} ${detail}`);
         throw new BadRequestException(m.kind === 'video'
-          ? 'O vídeo enviado não é o que foi gravado pelo aplicativo. Grave novamente.'
-          : 'Uma das fotos enviadas não é a que foi tirada pelo aplicativo. Tire novamente.');
+          ? `O vídeo enviado não é o que foi gravado pelo aplicativo. Grave novamente. ${detail}`
+          : `Uma das fotos enviadas não é a que foi tirada pelo aplicativo. Tire novamente. ${detail}`);
       }
     }
   }
