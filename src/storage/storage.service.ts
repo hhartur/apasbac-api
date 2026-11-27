@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { Readable } from 'stream';
+import { createHash } from 'crypto';
 import { GenerateUploadSignatureDto } from './dto/generate-upload-signature.dto';
 
 const IMAGE_FORMATS = 'jpg,jpeg,png,webp,heic,heif';
@@ -69,7 +70,36 @@ export class StorageService {
     if (!process.env.CLOUDINARY_CLOUD_NAME) return null;
     const { publicId, resourceType } = this.extractPublicIdAndType(url);
     const resource = await cloudinary.api.resource(publicId, { resource_type: resourceType });
-    return String(resource?.etag ?? '').toLowerCase();
+    const etag = String(resource?.etag ?? '').toLowerCase();
+    if (/^[a-f0-9]{32}$/.test(etag)) return etag;
+    // Para vídeos a Admin API não informa o etag: calcula o MD5 do original guardado.
+    return this.md5OfStored(String(resource?.secure_url || url), Number(resource?.bytes) || undefined);
+  }
+
+  /**
+   * MD5 do arquivo original guardado no Cloudinary, lido em fluxo (sem carregar o
+   * vídeo inteiro na memória). Só aceita URLs da conta da API.
+   */
+  async md5OfStored(url: string, expectedBytes?: number, fetcher: typeof fetch = fetch): Promise<string> {
+    if (!this.isOwnedUrl(url)) throw new Error('URL fora da conta Cloudinary da API');
+    const limit = Math.min(expectedBytes ? expectedBytes + 1 : Infinity, 500 * 1024 * 1024);
+    const response = await fetcher(url, { signal: AbortSignal.timeout(50_000), redirect: 'error' });
+    if (!response.ok || !response.body) throw new Error(`Cloudinary respondeu ${response.status}`);
+    const hash = createHash('md5');
+    const reader = response.body.getReader();
+    let size = 0;
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        size += value.byteLength;
+        if (size > limit) throw new Error('Arquivo maior que o esperado');
+        hash.update(value);
+      }
+    } finally {
+      await reader.cancel().catch(() => undefined);
+    }
+    return hash.digest('hex');
   }
 
   async deleteMany(urls: string[]): Promise<void> {

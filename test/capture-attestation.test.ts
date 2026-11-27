@@ -111,3 +111,22 @@ test('envio: etag do Cloudinary diferente do MD5, atestado pelo app no upload, �
   await assert.rejects(service({ ...etags, [VIDEO]: md5('trocado') }).submitMonitoring('m1', dto, { id: 'u1' }),
     (e: HttpException) => e.getStatus() === 400 && /vídeo enviado/.test(e.message));
 });
+
+test('vídeo sem etag na Admin API: MD5 calculado do arquivo guardado, em fluxo', async () => {
+  const { StorageService } = await import('../src/storage/storage.service');
+  const prev = process.env.CLOUDINARY_CLOUD_NAME;
+  process.env.CLOUDINARY_CLOUD_NAME = 'apasbac';
+  try {
+    const s = new StorageService();
+    const body = Buffer.alloc(300_000, 7);
+    const fake = (async () => new Response(new Blob([body]).stream())) as unknown as typeof fetch;
+    const url = 'https://res.cloudinary.com/apasbac/video/upload/v1/monitoring/videos/v.mp4';
+    assert.equal(await s.md5OfStored(url, body.length, fake), createHash('md5').update(body).digest('hex'));
+    // Maior que o tamanho informado pelo Cloudinary: recusa.
+    await assert.rejects(s.md5OfStored(url, 10, fake), /maior que o esperado/);
+    // Fora da conta da API: recusa sem baixar.
+    await assert.rejects(s.md5OfStored('https://evil.example/v.mp4', undefined, fake), /fora da conta/);
+  } finally {
+    process.env.CLOUDINARY_CLOUD_NAME = prev;
+  }
+});
