@@ -1,7 +1,7 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  IsString, IsUrl, IsArray, ArrayMinSize, ArrayMaxSize, IsIn, Matches, IsISO8601, ValidateNested, IsNotEmpty, MaxLength,
+  IsString, IsUrl, IsArray, ArrayMinSize, ArrayMaxSize, IsIn, Matches, IsISO8601, ValidateNested, IsNotEmpty, MaxLength, IsOptional,
 } from 'class-validator';
 
 const UPDATE_APP = 'Atualize o aplicativo: as fotos e o vídeo do monitoramento precisam ser gravados pela câmera do app.';
@@ -26,6 +26,14 @@ export class CapturedMediaDto {
   @ApiProperty({ description: 'HMAC-SHA256(captureKey, "kind|md5|capturedAt|monitoringId") em hex.' })
   @Matches(/^[a-f0-9]{64}$/, { message: 'assinatura inválida' })
   signature: string;
+
+  @ApiPropertyOptional({ description: 'etag devolvido pelo Cloudinary no upload deste arquivo.' })
+  @IsOptional() @Matches(/^[a-f0-9]{16,64}$/i, { message: 'uploadEtag inválido' })
+  uploadEtag?: string;
+
+  @ApiPropertyOptional({ description: 'HMAC-SHA256(captureKey, "upload|md5|uploadEtag|url|monitoringId") em hex.' })
+  @IsOptional() @Matches(/^[a-f0-9]{64}$/, { message: 'uploadSignature inválida' })
+  uploadSignature?: string;
 }
 
 export class SubmitMonitoringDto {

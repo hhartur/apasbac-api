@@ -6,7 +6,7 @@ import { HttpException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import {
-  captureKey, issueCaptureSession, mediaSignature, verifyCaptureToken, verifyMedia, CaptureError,
+  captureKey, issueCaptureSession, mediaSignature, uploadSignature, verifyCaptureToken, verifyMedia, CaptureError,
 } from '../src/monitor/capture-attestation';
 import { SubmitMonitoringDto } from '../src/monitor/dto/submit-monitoring.dto';
 import { MonitorService } from '../src/monitor/monitor.service';
@@ -66,7 +66,7 @@ test('envio: aceita mídias gravadas pelo app e confere o arquivo no Cloudinary'
   assert.equal(updated.status, 'IN_REVIEW');
   // Arquivo trocado depois da captura (etag diferente) é recusado.
   await assert.rejects(service({ ...etags, [IMAGES[2]]: md5('outro') }).submitMonitoring('m1', dto, { id: 'u1' }),
-    (e: HttpException) => e.getStatus() === 400 && /não é o que foi gravado/.test(e.message));
+    (e: HttpException) => e.getStatus() === 400 && /não é a que foi tirada/.test(e.message));
 });
 
 test('envio: sem atestado (app antigo ou envio de fora) é recusado', async () => {
@@ -92,4 +92,22 @@ test('DTO exige atestado com mensagem para atualizar o app', async () => {
   assert.ok(messages.some((m) => /Atualize o aplicativo/.test(m)));
   const s = issueCaptureSession('m1', 'u1');
   assert.equal((await validate(plainToInstance(SubmitMonitoringDto, appSubmit(s, 'm1')))).length, 0);
+});
+
+test('envio: etag do Cloudinary diferente do MD5, atestado pelo app no upload, é aceito', async () => {
+  const s = issueCaptureSession('m1', 'u1');
+  const dto: any = appSubmit(s, 'm1');
+  // O Cloudinary devolveu um etag que não é o MD5 do celular; o app assina a ligação.
+  const cloud = (url: string) => md5(`nuvem:${url}`);
+  dto.media = dto.media.map((m: any) => ({ ...m, uploadEtag: cloud(m.url),
+    uploadSignature: uploadSignature(s.captureKey, m, cloud(m.url), 'm1') }));
+  const etags = Object.fromEntries(dto.media.map((m: any) => [m.url, cloud(m.url)]));
+  const updated: any = await service(etags).submitMonitoring('m1', dto, { id: 'u1' });
+  assert.equal(updated.status, 'IN_REVIEW');
+  // Assinatura do upload forjada (sem a chave) é recusada.
+  const forged = { ...dto, media: dto.media.map((m: any) => ({ ...m, uploadSignature: 'f'.repeat(64) })) };
+  await assert.rejects(service(etags).submitMonitoring('m1', forged, { id: 'u1' }), (e: HttpException) => e.getStatus() === 400);
+  // Arquivo trocado no Cloudinary depois do upload é recusado.
+  await assert.rejects(service({ ...etags, [VIDEO]: md5('trocado') }).submitMonitoring('m1', dto, { id: 'u1' }),
+    (e: HttpException) => e.getStatus() === 400 && /vídeo enviado/.test(e.message));
 });

@@ -8,7 +8,7 @@ import { CreateMonitoringDto } from './dto/create-monitoring.dto';
 import { ReviewMonitoringDto } from './dto/review-monitoring.dto';
 import { MonitoringStatus, Role } from '../common/enums';
 import { Monitoring } from '@prisma/client';
-import { CaptureError, CapturedMedia, issueCaptureSession, verifyCaptureToken, verifyMedia } from './capture-attestation';
+import { CaptureError, CapturedMedia, expectedEtag, issueCaptureSession, verifyCaptureToken, verifyMedia } from './capture-attestation';
 
 @Injectable()
 export class MonitorService {
@@ -66,12 +66,14 @@ export class MonitorService {
     if (!dto.captureToken || media.length !== expected.length) {
       throw new BadRequestException('Atualize o aplicativo: as fotos e o vídeo do monitoramento precisam ser gravados pela câmera do app.');
     }
+    const expectedEtags = new Map<string, string>();
     try {
       const payload = verifyCaptureToken(dto.captureToken, id, user.id);
       for (const e of expected) {
         const m = media.find((x) => x.url === e.url);
         if (!m || m.kind !== e.kind) throw new CaptureError('As fotos e o vídeo precisam ser gravados pela câmera do aplicativo.');
         verifyMedia(m, dto.captureToken, payload);
+        expectedEtags.set(m.url, expectedEtag(m, dto.captureToken, payload));
       }
     } catch (e) {
       if (e instanceof CaptureError) throw new BadRequestException(e.message);
@@ -84,8 +86,10 @@ export class MonitorService {
       } catch {
         throw new ServiceUnavailableException('Não foi possível conferir os arquivos enviados. Tente novamente em instantes.');
       }
-      if (etag !== null && etag !== m.md5) {
-        throw new BadRequestException('Um dos arquivos enviados não é o que foi gravado pelo aplicativo.');
+      if (etag !== null && etag !== expectedEtags.get(m.url)) {
+        throw new BadRequestException(m.kind === 'video'
+          ? 'O vídeo enviado não é o que foi gravado pelo aplicativo. Grave novamente.'
+          : 'Uma das fotos enviadas não é a que foi tirada pelo aplicativo. Tire novamente.');
       }
     }
   }

@@ -16,7 +16,11 @@ export const CAPTURE_TTL_MS = 24 * 60 * 60 * 1000;
 const CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 export interface CapturePayload { m: string; u: string; iat: number; exp: number; n: string }
-export interface CapturedMedia { url: string; kind: 'image' | 'video'; md5: string; capturedAt: string; signature: string }
+export interface CapturedMedia {
+  url: string; kind: 'image' | 'video'; md5: string; capturedAt: string; signature: string;
+  /** etag que o Cloudinary devolveu ao app no upload, assinado pelo app. */
+  uploadEtag?: string; uploadSignature?: string;
+}
 
 export class CaptureError extends Error {}
 
@@ -56,6 +60,26 @@ export function verifyCaptureToken(token: string, monitoringId: string, userId: 
 
 export function mediaSignature(key: string, m: Pick<CapturedMedia, 'kind' | 'md5' | 'capturedAt'>, monitoringId: string): string {
   return hmac(key, `${m.kind}|${m.md5}|${m.capturedAt}|${monitoringId}`);
+}
+
+/**
+ * Liga o arquivo gravado (md5) ao que o Cloudinary guardou (etag devolvido no
+ * upload): HMAC(chave, "upload|md5|etag|url|monitoringId"). Assim a conferência
+ * não depende de o etag do Cloudinary ser igual ao MD5 calculado no celular.
+ */
+export function uploadSignature(key: string, m: Pick<CapturedMedia, 'md5' | 'url'>, etag: string, monitoringId: string): string {
+  return hmac(key, `upload|${m.md5}|${etag}|${m.url}|${monitoringId}`);
+}
+
+/** etag esperado no Cloudinary para a mídia: o atestado pelo app no upload ou, sem ele, o próprio MD5. */
+export function expectedEtag(m: CapturedMedia, token: string, payload: CapturePayload): string {
+  if (!m.uploadEtag && !m.uploadSignature) return m.md5;
+  const etag = String(m.uploadEtag ?? '').toLowerCase();
+  if (!/^[a-f0-9]{16,64}$/.test(etag) || !m.uploadSignature ||
+      !sameHex(m.uploadSignature, uploadSignature(captureKey(token), m, etag, payload.m))) {
+    throw new CaptureError('As fotos e o vídeo precisam ser enviados pelo aplicativo.');
+  }
+  return etag;
 }
 
 /** Confere a assinatura e o horário de uma mídia (o conteúdo é conferido à parte, pelo etag). */
